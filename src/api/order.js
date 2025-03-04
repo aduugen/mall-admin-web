@@ -68,3 +68,10 @@ export function getTodayOrdersCount() {
     method:'get'
   })
 }
+
+export function getTodaySalesAmount() {
+  return request({
+    url:'/order/todaySalesAmount',
+    method:'get'
+  })
+}
