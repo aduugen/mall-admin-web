@@ -61,3 +61,10 @@ export function updateOrderNote(params) {
     params:params
   })
 }
+
+export function getTodayOrdersCount() {
+  return request({
+    url:'/order/todayOrdersCount',
+    method:'get'
+  })
+}
