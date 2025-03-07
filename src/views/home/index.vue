@@ -158,7 +158,8 @@
   import img_home_today_amount from '@/assets/images/home_today_amount.png';
   import img_home_yesterday_amount from '@/assets/images/home_yesterday_amount.png';
   import {getTodayOrdersCount, getTodaySalesAmount} from '@/api/order';
-  import { getProductOverview } from '@/api/product';
+  import {getProductOverview} from '@/api/product';
+  import {getTotalMemberCount} from '@/api/member';
 
   const DATA_FROM_BACKEND = {
     columns: ['date', 'orderCount','orderAmount'],
@@ -218,6 +219,7 @@
         img_home_yesterday_amount,
         todayOrdersCount: 0,
         todaySalesAmount: 0,
+        totalMemberCount: 0,
         productOverview: null
       }
     },
@@ -238,6 +240,11 @@
         this.productOverview = response.data;
       }).catch(error => {
         console.error('Error fetching product overview:', error);
+      });
+      getTotalMemberCount().then(response => {
+        this.totalMemberCount = response.data;
+      }).catch(error => {
+        console.error('Error fetching total member count:', error);
       });
     },
     methods:{
