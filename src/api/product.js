@@ -70,3 +70,10 @@ export function getProduct(id) {
   })
 }
 
+export function getProductOverview() {
+  return request({
+    url:'/product/overview',
+    method:'get',
+  })
+}
+

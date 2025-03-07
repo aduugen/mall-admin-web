@@ -87,18 +87,16 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <div class="out-border">
-            <div class="layout-title">商品总览</div>
+            <div class="layout-title">商品(SPU)总览</div>
             <div style="padding: 40px">
               <el-row>
-                <el-col :span="6" class="color-danger overview-item-value">100</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">400</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">50</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">500</el-col>
+                <el-col :span="6" class="color-danger overview-item-value">{{ productOverview.product_off_shelf_count }}</el-col>
+                <el-col :span="6" class="color-danger overview-item-value">{{ productOverview.product_on_shelf_count }}</el-col>
+                <el-col :span="6" class="color-danger overview-item-value">{{ productOverview.product_total_count }}</el-col>
               </el-row>
               <el-row class="font-medium">
                 <el-col :span="6" class="overview-item-title">已下架</el-col>
                 <el-col :span="6" class="overview-item-title">已上架</el-col>
-                <el-col :span="6" class="overview-item-title">库存紧张</el-col>
                 <el-col :span="6" class="overview-item-title">全部商品</el-col>
               </el-row>
             </div>
@@ -109,15 +107,9 @@
             <div class="layout-title">用户总览</div>
             <div style="padding: 40px">
               <el-row>
-                <el-col :span="6" class="color-danger overview-item-value">100</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">200</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">1000</el-col>
-                <el-col :span="6" class="color-danger overview-item-value">5000</el-col>
+                <el-col :span="6" class="color-danger overview-item-value">{{ totalMemberCount }}</el-col>
               </el-row>
               <el-row class="font-medium">
-                <el-col :span="6" class="overview-item-title">今日新增</el-col>
-                <el-col :span="6" class="overview-item-title">昨日新增</el-col>
-                <el-col :span="6" class="overview-item-title">本月新增</el-col>
                 <el-col :span="6" class="overview-item-title">会员总数</el-col>
               </el-row>
             </div>
@@ -128,57 +120,23 @@
     <div class="statistics-layout">
       <div class="layout-title">订单统计</div>
       <el-row>
-        <el-col :span="4">
-          <div style="padding: 20px">
-            <div>
-              <div style="color: #909399;font-size: 14px">本月订单总数</div>
-              <div style="color: #606266;font-size: 24px;padding: 10px 0">10000</div>
-              <div>
-                <span class="color-success" style="font-size: 14px">+10%</span>
-                <span style="color: #C0C4CC;font-size: 14px">同比上月</span>
-              </div>
-            </div>
-            <div style="margin-top: 20px;">
-              <div style="color: #909399;font-size: 14px">本周订单总数</div>
-              <div style="color: #606266;font-size: 24px;padding: 10px 0">1000</div>
-              <div>
-                <span class="color-danger" style="font-size: 14px">-10%</span>
-                <span style="color: #C0C4CC;font-size: 14px">同比上周</span>
-              </div>
-            </div>
-            <div style="margin-top: 20px;">
-              <div style="color: #909399;font-size: 14px">本月销售总额</div>
-              <div style="color: #606266;font-size: 24px;padding: 10px 0">100000</div>
-              <div>
-                <span class="color-success" style="font-size: 14px">+10%</span>
-                <span style="color: #C0C4CC;font-size: 14px">同比上月</span>
-              </div>
-            </div>
-            <div style="margin-top: 20px;">
-              <div style="color: #909399;font-size: 14px">本周销售总额</div>
-              <div style="color: #606266;font-size: 24px;padding: 10px 0">50000</div>
-              <div>
-                <span class="color-danger" style="font-size: 14px">-10%</span>
-                <span style="color: #C0C4CC;font-size: 14px">同比上周</span>
-              </div>
-            </div>
-          </div>
-        </el-col>
+        <el-date-picker
+          style="float: left;z-index: 1"
+          size="small"
+          v-model="orderCountDate"
+          type="daterange"
+          align="right"
+          unlink-panels
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          @change="handleDateChange"
+          :picker-options="pickerOptions">
+        </el-date-picker>
+      </el-row>
+      <el-row>
         <el-col :span="20">
-          <div style="padding: 10px;border-left:1px solid #DCDFE6">
-            <el-date-picker
-              style="float: right;z-index: 1"
-              size="small"
-              v-model="orderCountDate"
-              type="daterange"
-              align="right"
-              unlink-panels
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              @change="handleDateChange"
-              :picker-options="pickerOptions">
-            </el-date-picker>
+          <div style="padding: 20px;border-left:1px solid #DCDFE6">
             <div>
               <ve-line
                 :data="chartData"
@@ -200,6 +158,7 @@
   import img_home_today_amount from '@/assets/images/home_today_amount.png';
   import img_home_yesterday_amount from '@/assets/images/home_yesterday_amount.png';
   import {getTodayOrdersCount, getTodaySalesAmount} from '@/api/order';
+  import { getProductOverview } from '@/api/product';
 
   const DATA_FROM_BACKEND = {
     columns: ['date', 'orderCount','orderAmount'],
@@ -258,7 +217,8 @@
         img_home_today_amount,
         img_home_yesterday_amount,
         todayOrdersCount: 0,
-        todaySalesAmount: 0
+        todaySalesAmount: 0,
+        productOverview: null
       }
     },
     created(){
@@ -272,7 +232,12 @@
       getTodaySalesAmount().then(response => {
         this.todaySalesAmount = response.data;
       }).catch(error => {
-        console.error('Error fetching orders count:', error);
+        console.error('Error fetching orders amount:', error);
+      });
+      getProductOverview().then(response => {
+        this.productOverview = response.data;
+      }).catch(error => {
+        console.error('Error fetching product overview:', error);
       });
     },
     methods:{
