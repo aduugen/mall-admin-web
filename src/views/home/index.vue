@@ -19,65 +19,71 @@
       </el-row>
     </div>
     <div class="un-handle-layout">
-      <div class="layout-title">待处理事务</div>
+      <div class="layout-title">订单事务总览</div>
       <div class="un-handle-content">
         <el-row :gutter="20">
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">待付款订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">待付款订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{orderStatusStatistic.wait_pay_count}}</span>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">已完成订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">待发货订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderStatusStatistic.wait_ship_count }}</span>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">待确认收货订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">已发货订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderStatusStatistic.shipped_count }}</span>
+            </div>
+          </el-col>
+          <el-col :span="4">
+            <div class="un-handle-item">
+              <span class="overview-item-title">已完成订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderStatusStatistic.completed_count }}</span>
+            </div>
+          </el-col>
+          <el-col :span="4">
+            <div class="un-handle-item">
+              <span class="overview-item-title">已关闭订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderStatusStatistic.completed_count }}</span>
+            </div>
+          </el-col>
+          <el-col :span="4">
+            <div class="un-handle-item">
+              <span class="overview-item-title">错误订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderStatusStatistic.invalid_count }}</span>
             </div>
           </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="8">
-            <div class="un-handle-item">
-              <span class="font-medium">待发货订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="un-handle-item">
-              <span class="font-medium">新缺货登记</span>
-              <span style="float: right" class="color-danger">(10)</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="un-handle-item">
-              <span class="font-medium">待处理退款申请</span>
-              <span style="float: right" class="color-danger">(10)</span>
-            </div>
-          </el-col>
         </el-row>
         <el-row :gutter="20">
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">已发货订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">待处理退货订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderReturnApplyStatistic.wait_handle_count }}</span>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">待处理退货订单</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">退货处理中订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderReturnApplyStatistic.return_processing_count }}</span>
             </div>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="4">
             <div class="un-handle-item">
-              <span class="font-medium">广告位即将到期</span>
-              <span style="float: right" class="color-danger">(10)</span>
+              <span class="overview-item-title">退货已接收订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderReturnApplyStatistic.return_received_count }}</span>
+            </div>
+          </el-col>
+          <el-col :span="4">
+            <div class="un-handle-item">
+              <span class="overview-item-title">拒绝退货订单：</span>
+              <span style="float: right" class="color-danger overview-item-value">{{ orderReturnApplyStatistic.rejected_count }}</span>
             </div>
           </el-col>
         </el-row>
@@ -157,9 +163,10 @@
   import img_home_order from '@/assets/images/home_order.png';
   import img_home_today_amount from '@/assets/images/home_today_amount.png';
   import img_home_yesterday_amount from '@/assets/images/home_yesterday_amount.png';
-  import {getTodayOrdersCount, getTodaySalesAmount} from '@/api/order';
+  import {getTodayOrdersCount, getTodaySalesAmount, getOrderStatusStatistic} from '@/api/order';
   import {getProductOverview} from '@/api/product';
   import {getTotalMemberCount} from '@/api/member';
+  import {getOrderReturnApplyStatistic} from '@/api/orderReturnApply';
 
   const DATA_FROM_BACKEND = {
     columns: ['date', 'orderCount','orderAmount'],
@@ -220,7 +227,9 @@
         todayOrdersCount: 0,
         todaySalesAmount: 0,
         totalMemberCount: 0,
-        productOverview: null
+        productOverview: null,
+        orderStatusStatistic: null,
+        orderReturnApplyStatistic: null
       }
     },
     created(){
@@ -245,6 +254,16 @@
         this.totalMemberCount = response.data;
       }).catch(error => {
         console.error('Error fetching total member count:', error);
+      });
+      getOrderStatusStatistic().then(response => {
+        this.orderStatusStatistic = response.data;
+      }).catch(error => {
+        console.error('Error fetching pending transaction statistics:', error);
+      });
+      getOrderReturnApplyStatistic().then(response => {
+        this.orderReturnApplyStatistic = response.data;
+      }).catch(error => {
+        console.error('Error fetching order return apply statistic:', error);
       });
     },
     methods:{

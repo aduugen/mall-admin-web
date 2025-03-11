@@ -75,3 +75,10 @@ export function getTodaySalesAmount() {
     method:'get'
   })
 }
+
+export function getOrderStatusStatistic() {
+  return request({
+    url: '/order/statusStatistic',
+    method: 'get'
+  })
+}
