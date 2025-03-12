@@ -6,3 +6,10 @@ export function getTotalMemberCount() {
     method:'get'
   })
 }
+
+export function getTodayNewMemberCount() {
+  return request({
+    url:'/admin/todaynewmembercount',
+    method:'get'
+  })
+}
