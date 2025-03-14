@@ -40,35 +40,35 @@
             <div class="un-handle-item">
               <img :src="wait_pay_icon" class="total-icon">
               <div class="total-title">待付款订单</div>
-              <div class="total-value">{{orderStatusStatistic.wait_pay_count}}</div>
+              <div class="total-value">{{orderStatusStatistic ? orderStatusStatistic.wait_pay_count : 0}}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="wait_ship_icon" class="total-icon">
               <div class="total-title">待发货订单</div>
-              <div class="total-value">{{ orderStatusStatistic.wait_ship_count }}</div>
+              <div class="total-value">{{ orderStatusStatistic ? orderStatusStatistic.wait_ship_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="shipped_icon" class="total-icon">
               <div class="total-title">已发货订单</div>
-              <div class="total-value">{{ orderStatusStatistic.shipped_count }}</div>
+              <div class="total-value">{{ orderStatusStatistic ? orderStatusStatistic.shipped_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="completed_icon" class="total-icon">
               <div class="total-title">已完成订单</div>
-              <div class="total-value">{{ orderStatusStatistic.completed_count }}</div>
+              <div class="total-value">{{ orderStatusStatistic ? orderStatusStatistic.completed_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="invalid_icon" class="total-icon">
               <div class="total-title">错误订单</div>
-              <div class="total-value">{{ orderStatusStatistic.invalid_count }}</div>
+              <div class="total-value">{{ orderStatusStatistic ? orderStatusStatistic.invalid_count : 0 }}</div>
             </div>
           </el-col>
         </el-row>
@@ -79,28 +79,28 @@
             <div class="un-handle-item">
               <img :src="wait_handle_icon" class="total-icon">
               <div class="total-title">待处理退货订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic.wait_handle_count }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.wait_handle_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="return_processing_icon" class="total-icon">
               <div class="total-title">退货处理中订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic.return_processing_count }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.return_processing_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="return_received_icon" class="total-icon">
               <div class="total-title">退货已接收订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic.return_received_count }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.return_received_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="rejected_icon" class="total-icon">
               <div class="total-title">拒绝退货订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic.rejected_count }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.rejected_count : 0 }}</div>
             </div>
           </el-col>
         </el-row>
@@ -114,21 +114,21 @@
             <div class="un-handle-item">
               <img :src="product_off_shelf_icon" class="total-icon">
               <div class="total-title">已下架</div>
-              <div class="total-value">{{ productOverview.product_off_shelf_count }}</div>
+              <div class="total-value">{{ productOverview ? productOverview.product_off_shelf_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="product_on_shelf_icon" class="total-icon">
               <div class="total-title">已上架</div>
-              <div class="total-value">{{ productOverview.product_on_shelf_count }}</div>
+              <div class="total-value">{{ productOverview ? productOverview.product_on_shelf_count : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="product_total_icon" class="total-icon">
               <div class="total-title">全部商品</div>
-              <div class="total-value">{{ productOverview.product_total_count }}</div>
+              <div class="total-value">{{ productOverview ? productOverview.product_total_count : 0 }}</div>
             </div>
           </el-col>
         </el-row>
