@@ -4,33 +4,30 @@
       <div class="layout-title">今日看板</div>
       <div class="un-handle-content">
         <el-row :gutter="20">
-          <el-col :span="6">
-            <div class="total-frame">
-              <img :src="img_home_order" class="total-icon">
-              <div class="total-title">订单数</div>
-              <div class="total-value">{{ todayOrdersCount }}</div>
-            </div>
+          <el-col :span="4">
+            <img :src="img_home_order" class="total-icon">
+            <div class="total-title">订单数</div>
+            <div class="total-value">{{ todayOrdersCount }}</div>
           </el-col>
-          <el-col :span="6">
-            <div class="total-frame">
-              <img :src="img_home_today_amount" class="total-icon">
-              <div class="total-title">销售额</div>
-              <div class="total-value">￥{{ todaySalesAmount }}</div>
-            </div>
+          <el-col :span="4">
+            <img :src="img_home_today_amount" class="total-icon">
+            <div class="total-title">销售额</div>
+            <div class="total-value">￥{{ todaySalesAmount }}</div>
           </el-col>
-          <el-col :span="6">
-            <div class="total-frame">
-              <img :src="today_new_member_icon" class="total-icon">
-              <div class="total-title">新增会员</div>
-              <div class="total-value">￥{{ todayNewMemberCount }}</div>
-            </div>
+          <el-col :span="4">
+            <img :src="today_new_member_icon" class="total-icon">
+            <div class="total-title">新增会员</div>
+            <div class="total-value">{{ todayNewMemberCount }}</div>
           </el-col>
-          <el-col :span="6">
-            <div class="total-frame">
-              <img :src="today_visited_icon" class="total-icon">
-              <div class="total-title">访客数</div>
-              <div class="total-value">￥{{ todaySalesAmount }}</div>
-            </div>
+          <el-col :span="4">
+            <img :src="today_visited_icon" class="total-icon">
+            <div class="total-title">访客数</div>
+            <div class="total-value">{{ visitorStats ? visitorStats.totalCount : 0 }}</div>
+          </el-col>
+          <el-col :span="4">
+            <img :src="online_visitor_icon" class="total-icon">
+            <div class="total-title">在线访客数(30分钟内)</div>
+            <div class="total-value">{{ visitorStats ? visitorStats.onlineCount : 0 }}</div>
           </el-col>
         </el-row>
       </div>
@@ -141,11 +138,18 @@
       <div class="layout-title">用户总览</div>
       <div class="un-handle-content">
         <el-row :gutter="20">
-          <el-col :span="6">
+          <el-col :span="4">
             <div class="un-handle-item">
               <img :src="member_total_icon" class="total-icon">
               <div class="total-title">会员总数</div>
               <div class="total-value">{{ totalMemberCount }}</div>
+            </div>
+          </el-col>
+          <el-col :span="4">
+            <div class="un-handle-item">
+              <img :src="total_visited_icon" class="total-icon">
+              <div class="total-title">访客总数</div>
+              <div class="total-value">{{ totalVisitorCount }}</div>
             </div>
           </el-col>
         </el-row>
@@ -206,10 +210,13 @@
   import member_total_icon from '@/assets/images/member_total.png';
   import today_new_member_icon from '@/assets/images/today_new_member.png';
   import today_visited_icon from '@/assets/images/today_visited.png';
+  import total_visited_icon from '@/assets/images/total_visited.png';
+  import online_visitor_icon from '@/assets/images/online_visitor.png'; 
   import {getTodayOrdersCount, getTodaySalesAmount, getOrderStatusStatistic} from '@/api/order';
   import {getProductOverview} from '@/api/product';
   import {getTotalMemberCount, getTodayNewMemberCount} from '@/api/member';
   import {getOrderReturnApplyStatistic} from '@/api/orderReturnApply';
+  import {getTodayVisitorStats, getTotalVisitorCount} from '@/api/visitor';
 
   const DATA_FROM_BACKEND = {
     columns: ['date', 'orderCount','orderAmount'],
@@ -282,13 +289,17 @@
         member_total_icon,
         today_new_member_icon,
         today_visited_icon,
+        total_visited_icon,
+        online_visitor_icon,
         todayOrdersCount: 0,
         todaySalesAmount: 0,
         totalMemberCount: 0,
         todayNewMemberCount: 0,
         productOverview: null,
         orderStatusStatistic: null,
-        orderReturnApplyStatistic: null
+        orderReturnApplyStatistic: null,
+        visitorStats: null,
+        totalVisitorCount: 0
       }
     },
     created(){
@@ -328,6 +339,16 @@
         this.todayNewMemberCount = response.data;
       }).catch(error => {
         console.error('Error fetching today new member count:', error);
+      });
+      getTodayVisitorStats().then(response => {
+        this.visitorStats = response.data;
+      }).catch(error => {
+        console.error('Error fetching today visitor stats:', error);
+      });
+      getTotalVisitorCount().then(response => {
+        this.totalVisitorCount = response.data;
+      }).catch(error => {
+        console.error('Error fetching total visitor count:', error);
       });
     },
     methods:{
