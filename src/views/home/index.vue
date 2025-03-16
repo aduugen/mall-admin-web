@@ -156,7 +156,7 @@
       </div>
     </div>
     <div class="un-handle-layout">
-      <div class="layout-title">订单统计</div>
+      <div class="layout-title">运营统计曲线</div>
       <el-row>
         <el-date-picker
           style="float: left;z-index: 1"
@@ -178,7 +178,6 @@
             <div>
               <ve-line
                 :data="chartData"
-                :legend-visible="false"
                 :loading="loading"
                 :data-empty="dataEmpty"
                 :settings="chartSettings"></ve-line>
@@ -219,23 +218,23 @@
   import {getTodayVisitorStats, getTotalVisitorCount} from '@/api/visitor';
 
   const DATA_FROM_BACKEND = {
-    columns: ['date', 'orderCount','orderAmount'],
+    columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
     rows: [
-      {date: '2018-11-01', orderCount: 10, orderAmount: 1093},
-      {date: '2018-11-02', orderCount: 20, orderAmount: 2230},
-      {date: '2018-11-03', orderCount: 33, orderAmount: 3623},
-      {date: '2018-11-04', orderCount: 50, orderAmount: 6423},
-      {date: '2018-11-05', orderCount: 80, orderAmount: 8492},
-      {date: '2018-11-06', orderCount: 60, orderAmount: 6293},
-      {date: '2018-11-07', orderCount: 20, orderAmount: 2293},
-      {date: '2018-11-08', orderCount: 60, orderAmount: 6293},
-      {date: '2018-11-09', orderCount: 50, orderAmount: 5293},
-      {date: '2018-11-10', orderCount: 30, orderAmount: 3293},
-      {date: '2018-11-11', orderCount: 20, orderAmount: 2293},
-      {date: '2018-11-12', orderCount: 80, orderAmount: 8293},
-      {date: '2018-11-13', orderCount: 100, orderAmount: 10293},
-      {date: '2018-11-14', orderCount: 10, orderAmount: 1293},
-      {date: '2018-11-15', orderCount: 40, orderAmount: 4293}
+      {date: '2018-11-01', orderCount: 10, orderAmount: 1093, memberCount: 120, activeMemberCount: 80, visitorCount: 200},
+      {date: '2018-11-02', orderCount: 20, orderAmount: 2230, memberCount: 130, activeMemberCount: 85, visitorCount: 210},
+      {date: '2018-11-03', orderCount: 33, orderAmount: 3623, memberCount: 140, activeMemberCount: 90, visitorCount: 220},
+      {date: '2018-11-04', orderCount: 50, orderAmount: 6423, memberCount: 150, activeMemberCount: 95, visitorCount: 230},
+      {date: '2018-11-05', orderCount: 80, orderAmount: 8492, memberCount: 160, activeMemberCount: 100, visitorCount: 240},
+      {date: '2018-11-06', orderCount: 60, orderAmount: 6293, memberCount: 170, activeMemberCount: 105, visitorCount: 250},
+      {date: '2018-11-07', orderCount: 20, orderAmount: 2293, memberCount: 180, activeMemberCount: 110, visitorCount: 260},
+      {date: '2018-11-08', orderCount: 60, orderAmount: 6293, memberCount: 190, activeMemberCount: 115, visitorCount: 270},
+      {date: '2018-11-09', orderCount: 50, orderAmount: 5293, memberCount: 200, activeMemberCount: 120, visitorCount: 280},
+      {date: '2018-11-10', orderCount: 30, orderAmount: 3293, memberCount: 210, activeMemberCount: 125, visitorCount: 290},
+      {date: '2018-11-11', orderCount: 20, orderAmount: 2293, memberCount: 220, activeMemberCount: 130, visitorCount: 300},
+      {date: '2018-11-12', orderCount: 80, orderAmount: 8293, memberCount: 230, activeMemberCount: 135, visitorCount: 310},
+      {date: '2018-11-13', orderCount: 100, orderAmount: 10293, memberCount: 240, activeMemberCount: 140, visitorCount: 320},
+      {date: '2018-11-14', orderCount: 10, orderAmount: 1293, memberCount: 250, activeMemberCount: 145, visitorCount: 330},
+      {date: '2018-11-15', orderCount: 40, orderAmount: 4293, memberCount: 260, activeMemberCount: 150, visitorCount: 340}
     ]
   };
   export default {
@@ -262,9 +261,19 @@
         orderCountDate: '',
         chartSettings: {
           xAxisType: 'time',
-          area:true,
-          axisSite: { right: ['orderAmount']},
-        labelMap: {'orderCount': '订单数量', 'orderAmount': '订单金额'}},
+          area: false,
+          axisSite: { 
+            right: ['orderAmount']
+          },
+          yAxisName: ['数量', '金额'],
+          labelMap: {
+            'orderCount': '订单数量', 
+            'orderAmount': '订单金额', 
+            'memberCount': '会员数量', 
+            'activeMemberCount': '活跃会员数量', 
+            'visitorCount': '访客数量'
+          }
+        },
         chartData: {
           columns: [],
           rows: []
@@ -361,9 +370,10 @@
         this.orderCountDate=[start,end];
       },
       getData(){
+        this.loading = true;
         setTimeout(() => {
           this.chartData = {
-            columns: ['date', 'orderCount','orderAmount'],
+            columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
             rows: []
           };
           for(let i=0;i<DATA_FROM_BACKEND.rows.length;i++){
@@ -375,7 +385,7 @@
               this.chartData.rows.push(item);
             }
           }
-          this.dataEmpty = false;
+          this.dataEmpty = this.chartData.rows.length === 0;
           this.loading = false
         }, 1000)
       }
