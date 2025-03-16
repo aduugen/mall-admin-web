@@ -257,6 +257,37 @@
               const end = new Date(start.getTime() + 1000 * 60 * 60 * 24 * 30);
               picker.$emit('pick', [start, end]);
             }
+          }, {
+            text: '最近一年',
+            onClick(picker) {
+              let end = new Date();
+              let start = new Date();
+              start.setFullYear(end.getFullYear() - 1);
+              picker.$emit('pick', [start, end]);
+            }
+          }, {
+            text: '最近两年',
+            onClick(picker) {
+              let end = new Date();
+              let start = new Date();
+              start.setFullYear(end.getFullYear() - 2);
+              picker.$emit('pick', [start, end]);
+            }
+          }, {
+            text: '最近三年',
+            onClick(picker) {
+              let end = new Date();
+              let start = new Date();
+              start.setFullYear(end.getFullYear() - 3);
+              picker.$emit('pick', [start, end]);
+            }
+          }, {
+            text: '开业至今',
+            onClick(picker) {
+              let end = new Date();
+              let start = new Date(2018, 0, 1); // 假设开业时间为2018年1月1日
+              picker.$emit('pick', [start, end]);
+            }
           }]
         },
         orderCountDate: '',
