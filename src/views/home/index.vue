@@ -217,27 +217,8 @@
   import {getTotalMemberCount, getTodayNewMemberCount} from '@/api/member';
   import {getOrderReturnApplyStatistic} from '@/api/orderReturnApply';
   import {getTodayVisitorStats, getTotalVisitorCount} from '@/api/visitor';
+  import {getHomeChartData} from '@/api/home';
 
-  const DATA_FROM_BACKEND = {
-    columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
-    rows: [
-      {date: '2018-11-01', orderCount: 10, orderAmount: 1093, memberCount: 120, activeMemberCount: 80, visitorCount: 200},
-      {date: '2018-11-02', orderCount: 20, orderAmount: 2230, memberCount: 130, activeMemberCount: 85, visitorCount: 210},
-      {date: '2018-11-03', orderCount: 33, orderAmount: 3623, memberCount: 140, activeMemberCount: 90, visitorCount: 220},
-      {date: '2018-11-04', orderCount: 50, orderAmount: 6423, memberCount: 150, activeMemberCount: 95, visitorCount: 230},
-      {date: '2018-11-05', orderCount: 80, orderAmount: 8492, memberCount: 160, activeMemberCount: 100, visitorCount: 240},
-      {date: '2018-11-06', orderCount: 60, orderAmount: 6293, memberCount: 170, activeMemberCount: 105, visitorCount: 250},
-      {date: '2018-11-07', orderCount: 20, orderAmount: 2293, memberCount: 180, activeMemberCount: 110, visitorCount: 260},
-      {date: '2018-11-08', orderCount: 60, orderAmount: 6293, memberCount: 190, activeMemberCount: 115, visitorCount: 270},
-      {date: '2018-11-09', orderCount: 50, orderAmount: 5293, memberCount: 200, activeMemberCount: 120, visitorCount: 280},
-      {date: '2018-11-10', orderCount: 30, orderAmount: 3293, memberCount: 210, activeMemberCount: 125, visitorCount: 290},
-      {date: '2018-11-11', orderCount: 20, orderAmount: 2293, memberCount: 220, activeMemberCount: 130, visitorCount: 300},
-      {date: '2018-11-12', orderCount: 80, orderAmount: 8293, memberCount: 230, activeMemberCount: 135, visitorCount: 310},
-      {date: '2018-11-13', orderCount: 100, orderAmount: 10293, memberCount: 240, activeMemberCount: 140, visitorCount: 320},
-      {date: '2018-11-14', orderCount: 10, orderAmount: 1293, memberCount: 250, activeMemberCount: 145, visitorCount: 330},
-      {date: '2018-11-15', orderCount: 40, orderAmount: 4293, memberCount: 260, activeMemberCount: 150, visitorCount: 340}
-    ]
-  };
   export default {
     name: 'home',
     data() {
@@ -413,29 +394,41 @@
         this.getData();
       },
       initOrderCountDate(){
-        let start = new Date(2018,10,1);
-        const end = new Date(start.getTime() + 1000 * 60 * 60 * 24 * 7);
+        let start = new Date();
+        start.setTime(start.getTime() - 7 * 24 * 60 * 60 * 1000); // 默认最近一周
+        const end = new Date();
         this.orderCountDate=[start,end];
       },
       getData(){
         this.loading = true;
-        setTimeout(() => {
+        // 格式化日期
+        let startDate = this.formatDate(this.orderCountDate[0]);
+        let endDate = this.formatDate(this.orderCountDate[1]);
+        
+        // 调用后端API获取数据
+        getHomeChartData({
+          startDate: startDate,
+          endDate: endDate
+        }).then(response => {
           this.chartData = {
             columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
-            rows: []
+            rows: response.data
           };
-          for(let i=0;i<DATA_FROM_BACKEND.rows.length;i++){
-            let item=DATA_FROM_BACKEND.rows[i];
-            let currDate=str2Date(item.date);
-            let start=this.orderCountDate[0];
-            let end=this.orderCountDate[1];
-            if(currDate.getTime()>=start.getTime()&&currDate.getTime()<=end.getTime()){
-              this.chartData.rows.push(item);
-            }
-          }
           this.dataEmpty = this.chartData.rows.length === 0;
-          this.loading = false
-        }, 1000)
+          this.loading = false;
+        }).catch(error => {
+          console.error('Error fetching chart data:', error);
+          this.loading = false;
+          this.dataEmpty = true;
+        });
+      },
+      formatDate(date) {
+        let year = date.getFullYear();
+        let month = date.getMonth() + 1;
+        let day = date.getDate();
+        month = month < 10 ? '0' + month : month;
+        day = day < 10 ? '0' + day : day;
+        return `${year}-${month}-${day}`;
       }
     }
   }
