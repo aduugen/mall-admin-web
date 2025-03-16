@@ -180,7 +180,8 @@
                 :data="chartData"
                 :loading="loading"
                 :data-empty="dataEmpty"
-                :settings="chartSettings"></ve-line>
+                :settings="chartSettings"
+                :extend="chartExtend"></ve-line>
             </div>
           </div>
         </el-col>
@@ -272,6 +273,22 @@
             'memberCount': '会员数量', 
             'activeMemberCount': '活跃会员数量', 
             'visitorCount': '访客数量'
+          }
+        },
+        chartExtend: {
+          xAxis: {
+            splitLine: {
+              lineStyle: {
+                type: 'dashed'
+              }
+            }
+          },
+          yAxis: {
+            splitLine: {
+              lineStyle: {
+                type: 'dashed'
+              }
+            }
           }
         },
         chartData: {
