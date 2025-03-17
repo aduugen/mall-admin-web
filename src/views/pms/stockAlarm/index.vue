@@ -15,7 +15,7 @@
       border>
       <el-table-column label="商品图片" width="120" align="center">
         <template slot-scope="scope">
-          <img v-if="scope.row.pic" style="height: 80px" :src="handleImageUrl(scope.row.pic)" alt="">
+          <img v-if="scope.row.pic" style="height: 80px" :src="handleImageUrl(scope.row.pic)" alt="" @error="handleImageError">
           <div v-else style="text-align: center; color: #999;">
             <i class="el-icon-picture" style="font-size: 40px;"></i>
             <p>暂无图片</p>
@@ -135,6 +135,11 @@
       console.log('BASE_API:', process.env.BASE_API);
     },
     methods: {
+      handleImageError(e) {
+        // 图片加载失败时，显示默认图片
+        console.log('图片加载失败，使用默认图片');
+        e.target.src = 'https://via.placeholder.com/80x80?text=No+Image';
+      },
       handleImageUrl(pic) {
         // 调试图片URL
         console.log('原始图片URL:', pic);
