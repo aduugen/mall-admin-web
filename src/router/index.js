@@ -31,8 +31,7 @@ export const constantRouterMap = [
       name: 'home',
       component: () => import('@/views/home/index'),
       meta: {title: '仪表盘', icon: 'dashboard'}
-    },
-    ]
+    }]
   }
 ]
 
@@ -42,18 +41,18 @@ export const asyncRouterMap = [
     component: Layout,
     redirect: '/pms/product',
     name: 'pms',
-    meta: {title: '商品', icon: 'product'},
+    meta: {title: '仓库', icon: 'product'},
     children: [{
       path: 'product',
       name: 'product',
       component: () => import('@/views/pms/product/index'),
-      meta: {title: '商品列表', icon: 'product-list'}
+      meta: {title: '销售商品', icon: 'product-list'}
     },
       {
         path: 'addProduct',
         name: 'addProduct',
         component: () => import('@/views/pms/product/add'),
-        meta: {title: '添加商品', icon: 'product-add'}
+        meta: {title: '入库商品', icon: 'product-add'}
       },
       {
         path: 'updateProduct',
@@ -67,6 +66,12 @@ export const asyncRouterMap = [
         name: 'productCate',
         component: () => import('@/views/pms/productCate/index'),
         meta: {title: '商品分类', icon: 'product-cate'}
+      },
+      {
+        path: 'stockAlarm',
+        name: 'stockAlarm',
+        component: () => import('@/views/pms/stockAlarm/index'),
+        meta: {title: '库存告警', icon: 'warning'}
       },
       {
         path: 'addProductCate',
