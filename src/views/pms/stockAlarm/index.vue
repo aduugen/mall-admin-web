@@ -4,7 +4,7 @@
       <div>
         <i class="el-icon-warning" style="color: #E6A23C; margin-right: 5px;"></i>
         <span style="font-weight: bold;">库存告警提示：</span>
-        <span>当前有 {{total}} 个商品库存低于预警值，请及时补充库存！</span>
+        <span>当前有 {{total}} 个商品库存低于预警值！</span>
       </div>
     </el-card>
     <el-table
@@ -15,7 +15,11 @@
       border>
       <el-table-column label="商品图片" width="120" align="center">
         <template slot-scope="scope">
-          <img style="height: 80px" :src="scope.row.pic" alt="">
+          <img v-if="scope.row.pic" style="height: 80px" :src="handleImageUrl(scope.row.pic)" alt="">
+          <div v-else style="text-align: center; color: #999;">
+            <i class="el-icon-picture" style="font-size: 40px;"></i>
+            <p>暂无图片</p>
+          </div>
         </template>
       </el-table-column>
       <el-table-column label="商品名称" align="center">
@@ -127,14 +131,44 @@
     },
     created() {
       this.getList();
+      // 调试信息
+      console.log('BASE_API:', process.env.BASE_API);
     },
     methods: {
+      handleImageUrl(pic) {
+        // 调试图片URL
+        console.log('原始图片URL:', pic);
+        
+        if (!pic || pic === '') {
+          console.log('图片URL为空');
+          return '';
+        }
+        
+        // 如果图片URL不是以http开头，则添加前缀
+        if (pic.indexOf('http') !== 0) {
+          // 确保pic是以/开头的路径
+          const picPath = pic.startsWith('/') ? pic : '/' + pic;
+          const fullUrl = process.env.BASE_API + picPath;
+          console.log('处理后的图片URL:', fullUrl);
+          return fullUrl;
+        }
+        
+        console.log('使用原始图片URL:', pic);
+        return pic;
+      },
       getList() {
         this.listLoading = true;
         fetchPageList(this.listQuery.pageNum, this.listQuery.pageSize).then(response => {
           this.list = response.data.list;
           this.total = response.data.total;
           this.listLoading = false;
+          
+          // 调试返回的数据
+          console.log('获取到的库存告警列表:', this.list);
+          if (this.list && this.list.length > 0) {
+            console.log('第一条数据:', this.list[0]);
+            console.log('图片URL:', this.list[0].pic);
+          }
         });
       },
       handleSizeChange(val) {
