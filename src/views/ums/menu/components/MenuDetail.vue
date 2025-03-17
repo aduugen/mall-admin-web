@@ -39,6 +39,13 @@
         <el-button v-if="!isEdit" @click="resetForm('menuFrom')">重置</el-button>
       </el-form-item>
     </el-form>
+    <div v-if="!isEdit" class="tips">
+      <el-alert
+        title="提示：新添加的菜单将自动分配给超级管理员角色"
+        type="info"
+        show-icon>
+      </el-alert>
+    </div>
   </el-card>
 </template>
 
@@ -149,5 +156,7 @@
 </script>
 
 <style scoped>
-
+.tips {
+  margin-top: 20px;
+}
 </style>
