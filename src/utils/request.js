@@ -5,7 +5,7 @@ import { getToken } from '@/utils/auth'
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: process.env.VUE_APP_BASE_API, // api的base_url
+  baseURL: process.env.BASE_API, // 修正为BASE_API
   timeout: 30000, // 请求超时时间增加到30秒
   headers: {
     'Content-Type': 'application/json;charset=utf-8'
@@ -16,7 +16,7 @@ const service = axios.create({
 service.interceptors.request.use(
   config => {
     if (store.getters.token) {
-      config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token
+      config.headers['Authorization'] = getToken() // 直接使用token，不添加Bearer前缀
     }
     return config
   },
@@ -40,7 +40,7 @@ service.interceptors.response.use(
       // 50008:非法的token; 50012:其他客户端登录; 50014:Token过期;
       if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
         // 重新登录
-        store.dispatch('user/resetToken').then(() => {
+        store.dispatch('resetToken').then(() => {
           location.reload()
         })
       }
@@ -58,7 +58,7 @@ service.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           message = '未授权，请重新登录'
-          store.dispatch('user/resetToken').then(() => {
+          store.dispatch('resetToken').then(() => {
             location.reload()
           })
           break

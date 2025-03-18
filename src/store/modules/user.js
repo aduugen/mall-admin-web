@@ -81,6 +81,16 @@ const user = {
         removeToken()
         resolve()
       })
+    },
+    
+    // 重置 token
+    resetToken({ commit }) {
+      return new Promise(resolve => {
+        commit('SET_TOKEN', '')
+        commit('SET_ROLES', [])
+        removeToken()
+        resolve()
+      })
     }
   }
 }
