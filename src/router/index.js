@@ -362,6 +362,32 @@ export const asyncRouterMap = [
         component: () => import('@/views/ums/resource/categoryList'),
         meta: {title: '资源分类'},
         hidden: true
+      },
+      {
+        path: 'memberInfo',
+        name: 'memberInfo',
+        component: () => import('@/views/ums/member/index'),
+        meta: {title: '会员信息', icon: 'user'}
+      },
+      {
+        path: 'memberDetail',
+        name: 'memberDetail',
+        component: () => import('@/views/ums/member/detail'),
+        meta: {title: '会员详情'},
+        hidden: true
+      },
+      {
+        path: 'memberConsumption',
+        name: 'memberConsumption',
+        component: () => import('@/views/ums/member/consumption'),
+        meta: {title: '会员消费信息', icon: 'money'}
+      },
+      {
+        path: 'memberOrders',
+        name: 'memberOrders',
+        component: () => import('@/views/ums/member/orders'),
+        meta: {title: '会员订单详情'},
+        hidden: true
       }
     ]
   },
