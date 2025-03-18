@@ -70,7 +70,10 @@ export function fetchMemberOrders(id, params) {
 
 export function getMemberLevels() {
   return request({
-    url: '/member/level/list',
-    method: 'get'
+    url: '/memberLevel/list',
+    method: 'get',
+    params: {
+      defaultStatus: 0
+    }
   })
 }
