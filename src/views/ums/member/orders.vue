@@ -53,16 +53,28 @@
                   border>
           <el-table-column type="selection" width="60" align="center"></el-table-column>
           <el-table-column label="订单编号" width="160" align="center">
-            <template slot-scope="scope">{{scope.row.orderSn || '暂无数据'}}</template>
+            <template slot-scope="scope">
+              <span v-if="scope.row.orderSn">{{scope.row.orderSn}}</span>
+              <span v-else class="empty-data">暂无数据</span>
+            </template>
           </el-table-column>
           <el-table-column label="提交时间" width="160" align="center">
-            <template slot-scope="scope">{{scope.row.createTime | formatTime}}</template>
+            <template slot-scope="scope">
+              <span v-if="scope.row.createTime">{{scope.row.createTime | formatTime}}</span>
+              <span v-else class="empty-data">暂无数据</span>
+            </template>
           </el-table-column>
           <el-table-column label="订单总金额" width="120" align="center">
-            <template slot-scope="scope">￥{{scope.row.totalAmount | formatPrice}}</template>
+            <template slot-scope="scope">
+              <span v-if="scope.row.totalAmount !== undefined">￥{{scope.row.totalAmount | formatPrice}}</span>
+              <span v-else class="empty-data">暂无数据</span>
+            </template>
           </el-table-column>
           <el-table-column label="应付金额" width="120" align="center">
-            <template slot-scope="scope">￥{{scope.row.payAmount | formatPrice}}</template>
+            <template slot-scope="scope">
+              <span v-if="scope.row.payAmount !== undefined">￥{{scope.row.payAmount | formatPrice}}</span>
+              <span v-else class="empty-data">暂无数据</span>
+            </template>
           </el-table-column>
           <el-table-column label="支付方式" width="120" align="center">
             <template slot-scope="scope">
@@ -144,28 +156,59 @@
         return formatDate(date, 'yyyy-MM-dd hh:mm:ss');
       },
       formatPrice(price) {
-        if (price == null) {
+        if (price == null || price === undefined) {
           return '0.00';
         }
-        return parseFloat(price).toFixed(2);
+        // 确保price是数值类型
+        return Number(price).toFixed(2);
       }
     },
     methods: {
       getMemberInfo() {
         getMemberConsumption(this.memberId).then(response => {
           this.memberInfo = response.data;
+          console.log('会员信息:', this.memberInfo);
+        }).catch(error => {
+          console.error('获取会员信息失败:', error);
         });
       },
       getList() {
         this.listLoading = true;
         fetchMemberOrders(this.memberId, this.listQuery).then(response => {
           this.listLoading = false;
-          this.list = response.data.list;
-          this.total = response.data.total;
-          console.log('订单数据:', this.list);
+          if (response.data) {
+            this.list = response.data.list || [];
+            this.total = response.data.total || 0;
+            
+            // 调试数据
+            console.log('订单数据原始值:', JSON.stringify(this.list));
+            
+            // 检查和转换数据类型
+            if (this.list && this.list.length > 0) {
+              this.list = this.list.map(item => {
+                // 确保金额字段是数值类型
+                if (item.totalAmount) item.totalAmount = Number(item.totalAmount);
+                if (item.payAmount) item.payAmount = Number(item.payAmount);
+                
+                // 确保状态字段是数值类型
+                if (item.payType !== undefined) item.payType = Number(item.payType);
+                if (item.sourceType !== undefined) item.sourceType = Number(item.sourceType);
+                if (item.status !== undefined) item.status = Number(item.status);
+                
+                return item;
+              });
+              console.log('订单数据处理后:', this.list);
+            }
+          } else {
+            this.list = [];
+            this.total = 0;
+            console.error('返回的数据格式不正确:', response);
+          }
         }).catch(error => {
           console.error('获取订单数据失败:', error);
           this.listLoading = false;
+          this.list = [];
+          this.total = 0;
         });
       },
       handleSelectionChange(val) {
@@ -225,5 +268,9 @@
     display: inline-block;
     float: right;
     margin-top: 20px;
+  }
+  .empty-data {
+    color: #909399;
+    font-size: 12px;
   }
 </style> 
