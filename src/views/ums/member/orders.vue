@@ -44,6 +44,37 @@
       <div slot="header" class="clearfix">
         <span>订单列表</span>
       </div>
+      <div class="filter-container">
+        <el-form :inline="true" :model="listQuery" size="small" label-width="100px">
+          <el-form-item label="订单编号：">
+            <el-input v-model="listQuery.orderSn" placeholder="订单编号" clearable style="width: 200px"></el-input>
+          </el-form-item>
+          <el-form-item label="支付方式：">
+            <el-select v-model="listQuery.payType" placeholder="全部" clearable style="width: 150px">
+              <el-option v-for="item in payTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="订单来源：">
+            <el-select v-model="listQuery.sourceType" placeholder="全部" clearable style="width: 150px">
+              <el-option v-for="item in sourceTypeOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="订单状态：">
+            <el-select v-model="listQuery.status" placeholder="全部" clearable style="width: 150px">
+              <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item label="退货状态：">
+            <el-select v-model="listQuery.returnStatus" placeholder="全部" clearable style="width: 150px">
+              <el-option v-for="item in returnStatusOptions" :key="item.value" :label="item.label" :value="item.value"></el-option>
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleFilter">查询</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </div>
       <div class="table-container">
         <el-table ref="orderTable"
                   :data="list"
@@ -144,9 +175,41 @@
         listLoading: true,
         listQuery: {
           pageNum: 1,
-          pageSize: 15
+          pageSize: 15,
+          orderSn: null,
+          payType: null,
+          sourceType: null,
+          status: null,
+          returnStatus: null
         },
-        multipleSelection: []
+        multipleSelection: [],
+        // 支付方式选项
+        payTypeOptions: [
+          { value: 0, label: '未支付' },
+          { value: 1, label: '支付宝' },
+          { value: 2, label: '微信' }
+        ],
+        // 订单来源选项
+        sourceTypeOptions: [
+          { value: 0, label: 'PC订单' },
+          { value: 1, label: 'APP订单' }
+        ],
+        // 订单状态选项
+        statusOptions: [
+          { value: 0, label: '待付款' },
+          { value: 1, label: '待发货' },
+          { value: 2, label: '已发货' },
+          { value: 3, label: '已完成' },
+          { value: 4, label: '已关闭' },
+          { value: 5, label: '无效订单' }
+        ],
+        // 退货状态选项
+        returnStatusOptions: [
+          { value: 0, label: '正常订单' },
+          { value: 1, label: '申请中' },
+          { value: 2, label: '已退货' },
+          { value: 3, label: '已拒绝' }
+        ]
       }
     },
     created() {
@@ -233,6 +296,24 @@
         this.listQuery.pageNum = val;
         this.getList();
       },
+      // 筛选查询
+      handleFilter() {
+        this.listQuery.pageNum = 1;
+        this.getList();
+      },
+      // 重置筛选条件
+      handleReset() {
+        this.listQuery = {
+          pageNum: 1,
+          pageSize: this.listQuery.pageSize,
+          orderSn: null,
+          payType: null,
+          sourceType: null,
+          status: null,
+          returnStatus: null
+        };
+        this.getList();
+      },
       goBack() {
         this.$router.back();
       },
@@ -299,5 +380,8 @@
   }
   .order-sn:hover {
     text-decoration: underline;
+  }
+  .filter-container {
+    margin-bottom: 20px;
   }
 </style> 
