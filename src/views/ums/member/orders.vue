@@ -54,7 +54,7 @@
           <el-table-column type="selection" width="60" align="center"></el-table-column>
           <el-table-column label="订单编号" width="160" align="center">
             <template slot-scope="scope">
-              <span v-if="scope.row.orderSn">{{scope.row.orderSn}}</span>
+              <span v-if="scope.row.orderSn" class="order-sn" @click="viewOrderDetail(scope.row)">{{scope.row.orderSn}}</span>
               <span v-else class="empty-data">暂无数据</span>
             </template>
           </el-table-column>
@@ -225,6 +225,16 @@
       },
       goBack() {
         this.$router.back();
+      },
+      viewOrderDetail(order) {
+        if (order && order.id) {
+          this.$router.push({path: '/oms/orderDetail', query: {id: order.id}});
+        } else {
+          this.$message({
+            message: '无法获取订单ID',
+            type: 'warning'
+          });
+        }
       }
     }
   }
@@ -272,5 +282,12 @@
   .empty-data {
     color: #909399;
     font-size: 12px;
+  }
+  .order-sn {
+    color: #409EFF;
+    cursor: pointer;
+  }
+  .order-sn:hover {
+    text-decoration: underline;
   }
 </style> 
