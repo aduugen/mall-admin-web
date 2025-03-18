@@ -67,3 +67,10 @@ export function fetchMemberOrders(id, params) {
     params: params
   })
 }
+
+export function getMemberLevels() {
+  return request({
+    url: '/member/level/list',
+    method: 'get'
+  })
+}

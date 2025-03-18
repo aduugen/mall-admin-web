@@ -1,63 +1,86 @@
 import axios from 'axios'
 import { Message, MessageBox } from 'element-ui'
-import store from '../store'
+import store from '@/store'
 import { getToken } from '@/utils/auth'
 
 // 创建axios实例
 const service = axios.create({
-  baseURL: process.env.BASE_API, // api的base_url
-  timeout: 15000 // 请求超时时间
+  baseURL: process.env.VUE_APP_BASE_API, // api的base_url
+  timeout: 30000, // 请求超时时间增加到30秒
+  headers: {
+    'Content-Type': 'application/json;charset=utf-8'
+  }
 })
 
 // request拦截器
-service.interceptors.request.use(config => {
-  if (store.getters.token) {
-    config.headers['Authorization'] = getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
+service.interceptors.request.use(
+  config => {
+    if (store.getters.token) {
+      config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token
+    }
+    return config
+  },
+  error => {
+    console.log(error)
+    Promise.reject(error)
   }
-  return config
-}, error => {
-  // Do something with request error
-  console.log(error) // for debug
-  Promise.reject(error)
-})
+)
 
-// respone拦截器
+// response拦截器
 service.interceptors.response.use(
   response => {
-  /**
-  * code为非200是抛错 可结合自己业务进行修改
-  */
     const res = response.data
     if (res.code !== 200) {
       Message({
-        message: res.message,
+        message: res.message || 'Error',
         type: 'error',
-        duration: 3 * 1000
+        duration: 5 * 1000
       })
 
-      // 401:未登录;
-      if (res.code === 401) {
-        MessageBox.confirm('你已被登出，可以取消继续留在该页面，或者重新登录', '确定登出', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          store.dispatch('FedLogOut').then(() => {
-            location.reload()// 为了重新实例化vue-router对象 避免bug
-          })
+      // 50008:非法的token; 50012:其他客户端登录; 50014:Token过期;
+      if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
+        // 重新登录
+        store.dispatch('user/resetToken').then(() => {
+          location.reload()
         })
       }
-      return Promise.reject('error')
+      return Promise.reject(new Error(res.message || 'Error'))
     } else {
-      return response.data
+      return res
     }
   },
   error => {
-    console.log('err' + error)// for debug
+    console.log('err' + error)
+    let message = '请求失败'
+    if (error.code === 'ECONNABORTED' && error.message.indexOf('timeout') !== -1) {
+      message = '请求超时，请检查网络连接'
+    } else if (error.response) {
+      switch (error.response.status) {
+        case 401:
+          message = '未授权，请重新登录'
+          store.dispatch('user/resetToken').then(() => {
+            location.reload()
+          })
+          break
+        case 403:
+          message = '拒绝访问'
+          break
+        case 404:
+          message = '请求错误,未找到该资源'
+          break
+        case 500:
+          message = '服务器端出错'
+          break
+        default:
+          message = '连接错误' + error.response.status
+      }
+    } else {
+      message = '连接到服务器失败'
+    }
     Message({
-      message: error.message,
+      message: message,
       type: 'error',
-      duration: 3 * 1000
+      duration: 5 * 1000
     })
     return Promise.reject(error)
   }

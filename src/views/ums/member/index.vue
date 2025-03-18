@@ -70,11 +70,15 @@
             </el-switch>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="160" align="center">
+        <el-table-column label="操作" width="200" align="center">
           <template slot-scope="scope">
             <el-button size="mini"
                        type="text"
                        @click="handleViewDetail(scope.$index, scope.row)">查看详情
+            </el-button>
+            <el-button size="mini"
+                       type="text"
+                       @click="handleUpdateMember(scope.$index, scope.row)">修改
             </el-button>
           </template>
         </el-table-column>
@@ -129,6 +133,68 @@
             value-format="yyyy-MM-dd">
           </el-date-picker>
         </el-form-item>
+        <el-form-item label="会员等级" prop="memberLevelId">
+          <el-select v-model="memberForm.memberLevelId" placeholder="请选择会员等级">
+            <el-option
+              v-for="item in memberLevels"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id">
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="收货地址">
+          <div v-for="(address, index) in memberForm.addresses" :key="index" class="address-item">
+            <el-form :model="address" :rules="addressRules" ref="addressForm">
+              <el-row :gutter="10">
+                <el-col :span="6">
+                  <el-form-item label="收货人" prop="name">
+                    <el-input v-model="address.name" placeholder="收货人姓名"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="手机号码" prop="phoneNumber">
+                    <el-input v-model="address.phoneNumber" placeholder="手机号码"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="默认地址">
+                    <el-switch v-model="address.defaultStatus" :active-value="1" :inactive-value="0"
+                              @change="handleDefaultAddressChange(index)"></el-switch>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-button type="text" @click="removeAddress(index)" v-if="memberForm.addresses.length > 1">删除</el-button>
+                </el-col>
+              </el-row>
+              <el-row :gutter="10">
+                <el-col :span="6">
+                  <el-form-item label="省份" prop="province">
+                    <el-input v-model="address.province" placeholder="省份"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="城市" prop="city">
+                    <el-input v-model="address.city" placeholder="城市"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="区县" prop="region">
+                    <el-input v-model="address.region" placeholder="区县"></el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="24">
+                  <el-form-item label="详细地址" prop="detailAddress">
+                    <el-input v-model="address.detailAddress" placeholder="详细地址"></el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </div>
+          <el-button type="text" @click="addAddress" v-if="memberForm.addresses.length < 10">添加收货地址</el-button>
+        </el-form-item>
         <el-form-item label="是否启用">
           <el-switch v-model="memberForm.status" :active-value="1" :inactive-value="0"></el-switch>
         </el-form-item>
@@ -138,10 +204,118 @@
         <el-button type="primary" @click="handleCreateMember('memberForm')">确 定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 修改会员对话框 -->
+    <el-dialog 
+      title="修改会员" 
+      :visible.sync="updateMemberDialogVisible" 
+      width="40%">
+      <el-form :model="memberForm" 
+               :rules="rules" 
+               ref="memberForm" 
+               label-width="100px">
+        <el-form-item label="会员昵称" prop="nickname">
+          <el-input v-model="memberForm.nickname" placeholder="请输入会员昵称"></el-input>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="memberForm.password" type="password" placeholder="不修改请留空"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phone">
+          <el-input v-model="memberForm.phone" placeholder="请输入手机号码"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="memberForm.email" placeholder="请输入邮箱"></el-input>
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="memberForm.gender">
+            <el-radio :label="0">未知</el-radio>
+            <el-radio :label="1">男</el-radio>
+            <el-radio :label="2">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="生日">
+          <el-date-picker
+            v-model="memberForm.birthday"
+            type="date"
+            placeholder="选择日期"
+            value-format="yyyy-MM-dd">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="会员等级" prop="memberLevelId">
+          <el-select v-model="memberForm.memberLevelId" placeholder="请选择会员等级">
+            <el-option
+              v-for="item in memberLevels"
+              :key="item.id"
+              :label="item.name"
+              :value="item.id">
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="收货地址">
+          <div v-for="(address, index) in memberForm.addresses" :key="index" class="address-item">
+            <el-form :model="address" :rules="addressRules" ref="addressForm">
+              <el-row :gutter="10">
+                <el-col :span="6">
+                  <el-form-item label="收货人" prop="name">
+                    <el-input v-model="address.name" placeholder="收货人姓名"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="手机号码" prop="phoneNumber">
+                    <el-input v-model="address.phoneNumber" placeholder="手机号码"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="默认地址">
+                    <el-switch v-model="address.defaultStatus" :active-value="1" :inactive-value="0"
+                              @change="handleDefaultAddressChange(index)"></el-switch>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-button type="text" @click="removeAddress(index)" v-if="memberForm.addresses.length > 1">删除</el-button>
+                </el-col>
+              </el-row>
+              <el-row :gutter="10">
+                <el-col :span="6">
+                  <el-form-item label="省份" prop="province">
+                    <el-input v-model="address.province" placeholder="省份"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="城市" prop="city">
+                    <el-input v-model="address.city" placeholder="城市"></el-input>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="6">
+                  <el-form-item label="区县" prop="region">
+                    <el-input v-model="address.region" placeholder="区县"></el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row>
+                <el-col :span="24">
+                  <el-form-item label="详细地址" prop="detailAddress">
+                    <el-input v-model="address.detailAddress" placeholder="详细地址"></el-input>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </div>
+          <el-button type="text" @click="addAddress" v-if="memberForm.addresses.length < 10">添加收货地址</el-button>
+        </el-form-item>
+        <el-form-item label="是否启用">
+          <el-switch v-model="memberForm.status" :active-value="1" :inactive-value="0"></el-switch>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="updateMemberDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="handleUpdateMemberSubmit('memberForm')">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 <script>
-  import {fetchList, createMember} from '@/api/member';
+  import {fetchList, createMember, updateMember, getMemberLevels} from '@/api/member';
   import {formatDate} from '@/utils/date';
 
   export default {
@@ -151,6 +325,7 @@
         list: null,
         total: null,
         listLoading: true,
+        memberLevels: [],
         listQuery: {
           pageNum: 1,
           pageSize: 5,
@@ -158,6 +333,8 @@
         },
         multipleSelection: [],
         addMemberDialogVisible: false,
+        updateMemberDialogVisible: false,
+        currentMemberId: null,
         memberForm: {
           password: '',
           nickname: '',
@@ -165,7 +342,17 @@
           email: '',
           gender: 0,
           birthday: null,
-          status: 1
+          status: 1,
+          memberLevelId: null,
+          addresses: [{
+            name: '',
+            phoneNumber: '',
+            defaultStatus: 0,
+            province: '',
+            city: '',
+            region: '',
+            detailAddress: ''
+          }]
         },
         rules: {
           password: [
@@ -182,12 +369,37 @@
           email: [
             { required: false, message: '请输入邮箱', trigger: 'blur' },
             { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+          ],
+          memberLevelId: [
+            { required: true, message: '请选择会员等级', trigger: 'change' }
+          ]
+        },
+        addressRules: {
+          name: [
+            { required: true, message: '请输入收货人姓名', trigger: 'blur' }
+          ],
+          phoneNumber: [
+            { required: true, message: '请输入手机号码', trigger: 'blur' },
+            { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+          ],
+          province: [
+            { required: true, message: '请输入省份', trigger: 'blur' }
+          ],
+          city: [
+            { required: true, message: '请输入城市', trigger: 'blur' }
+          ],
+          region: [
+            { required: true, message: '请输入区县', trigger: 'blur' }
+          ],
+          detailAddress: [
+            { required: true, message: '请输入详细地址', trigger: 'blur' }
           ]
         }
       }
     },
     created() {
       this.getList();
+      this.getMemberLevels();
     },
     filters: {
       formatTime(time) {
@@ -245,6 +457,40 @@
         this.addMemberDialogVisible = true;
         this.resetMemberForm();
       },
+      getMemberLevels() {
+        getMemberLevels().then(response => {
+          this.memberLevels = response.data;
+          // 设置默认会员等级为普通会员
+          const defaultLevel = this.memberLevels.find(level => level.defaultStatus === 1);
+          if (defaultLevel) {
+            this.memberForm.memberLevelId = defaultLevel.id;
+          }
+        });
+      },
+      addAddress() {
+        if (this.memberForm.addresses.length < 10) {
+          this.memberForm.addresses.push({
+            name: '',
+            phoneNumber: '',
+            defaultStatus: 0,
+            province: '',
+            city: '',
+            region: '',
+            detailAddress: ''
+          });
+        }
+      },
+      removeAddress(index) {
+        this.memberForm.addresses.splice(index, 1);
+      },
+      handleDefaultAddressChange(index) {
+        // 将其他地址设置为非默认
+        this.memberForm.addresses.forEach((address, i) => {
+          if (i !== index) {
+            address.defaultStatus = 0;
+          }
+        });
+      },
       resetMemberForm() {
         this.memberForm = {
           password: '',
@@ -253,7 +499,17 @@
           email: '',
           gender: 0,
           birthday: null,
-          status: 1
+          status: 1,
+          memberLevelId: null,
+          addresses: [{
+            name: '',
+            phoneNumber: '',
+            defaultStatus: 0,
+            province: '',
+            city: '',
+            region: '',
+            detailAddress: ''
+          }]
         };
         if (this.$refs.memberForm) {
           this.$refs.memberForm.resetFields();
@@ -282,6 +538,48 @@
             return false;
           }
         });
+      },
+      handleUpdateMember(index, row) {
+        this.updateMemberDialogVisible = true;
+        this.currentMemberId = row.id;
+        this.memberForm = {
+          ...row,
+          password: '', // 密码留空
+          addresses: row.addresses || [{
+            name: '',
+            phoneNumber: '',
+            defaultStatus: 0,
+            province: '',
+            city: '',
+            region: '',
+            detailAddress: ''
+          }]
+        };
+      },
+      handleUpdateMemberSubmit(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            const memberData = { ...this.memberForm };
+            if (!memberData.password) {
+              delete memberData.password; // 如果密码为空，则不更新密码
+            }
+            
+            updateMember(this.currentMemberId, memberData).then(response => {
+              this.$message({
+                message: '修改会员成功',
+                type: 'success',
+                duration: 1000
+              });
+              this.updateMemberDialogVisible = false;
+              this.getList();
+            }).catch(error => {
+              console.error('修改会员失败:', error);
+            });
+          } else {
+            console.log('表单验证失败');
+            return false;
+          }
+        });
       }
     }
   }
@@ -303,5 +601,11 @@
     display: inline-block;
     float: right;
     margin-top: 20px;
+  }
+  .address-item {
+    border: 1px solid #EBEEF5;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
   }
 </style> 
