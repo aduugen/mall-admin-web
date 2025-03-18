@@ -29,6 +29,22 @@ export function getMember(id) {
   })
 }
 
+export function createMember(data) {
+  return request({
+    url: '/member/create',
+    method: 'post',
+    data: data
+  })
+}
+
+export function updateMember(id, data) {
+  return request({
+    url: '/member/update/' + id,
+    method: 'post',
+    data: data
+  })
+}
+
 export function fetchConsumptionList(params) {
   return request({
     url: '/member/consumption/list',

@@ -29,6 +29,13 @@
     <el-card class="operate-container" shadow="never">
       <i class="el-icon-tickets"></i>
       <span>数据列表</span>
+      <el-button
+        class="btn-add"
+        size="mini"
+        type="primary"
+        @click="handleAddMember()">
+        添加会员
+      </el-button>
     </el-card>
     <div class="table-container">
       <el-table ref="memberTable"
@@ -85,10 +92,59 @@
         :total="total">
       </el-pagination>
     </div>
+    
+    <!-- 添加会员对话框 -->
+    <el-dialog 
+      title="添加会员" 
+      :visible.sync="addMemberDialogVisible" 
+      width="40%">
+      <el-form :model="memberForm" 
+               :rules="rules" 
+               ref="memberForm" 
+               label-width="100px">
+        <el-form-item label="会员昵称" prop="nickname">
+          <el-input v-model="memberForm.nickname" placeholder="请输入会员昵称"></el-input>
+        </el-form-item>
+        <el-form-item label="登录名" prop="username">
+          <el-input v-model="memberForm.username" placeholder="请输入登录名"></el-input>
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="memberForm.password" type="password" placeholder="请输入密码"></el-input>
+        </el-form-item>
+        <el-form-item label="手机号码" prop="phone">
+          <el-input v-model="memberForm.phone" placeholder="请输入手机号码"></el-input>
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="memberForm.email" placeholder="请输入邮箱"></el-input>
+        </el-form-item>
+        <el-form-item label="性别">
+          <el-radio-group v-model="memberForm.gender">
+            <el-radio :label="0">未知</el-radio>
+            <el-radio :label="1">男</el-radio>
+            <el-radio :label="2">女</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="生日">
+          <el-date-picker
+            v-model="memberForm.birthday"
+            type="date"
+            placeholder="选择日期"
+            value-format="yyyy-MM-dd">
+          </el-date-picker>
+        </el-form-item>
+        <el-form-item label="是否启用">
+          <el-switch v-model="memberForm.status" :active-value="1" :inactive-value="0"></el-switch>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="addMemberDialogVisible = false">取 消</el-button>
+        <el-button type="primary" @click="handleCreateMember('memberForm')">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 <script>
-  import {fetchList} from '@/api/member';
+  import {fetchList, createMember} from '@/api/member';
   import {formatDate} from '@/utils/date';
 
   export default {
@@ -103,7 +159,39 @@
           pageSize: 5,
           keyword: null
         },
-        multipleSelection: []
+        multipleSelection: [],
+        addMemberDialogVisible: false,
+        memberForm: {
+          username: '',
+          password: '',
+          nickname: '',
+          phone: '',
+          email: '',
+          gender: 0,
+          birthday: null,
+          status: 1
+        },
+        rules: {
+          username: [
+            { required: true, message: '请输入登录名', trigger: 'blur' },
+            { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+          ],
+          password: [
+            { required: true, message: '请输入密码', trigger: 'blur' },
+            { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
+          ],
+          nickname: [
+            { required: true, message: '请输入会员昵称', trigger: 'blur' }
+          ],
+          phone: [
+            { required: true, message: '请输入手机号码', trigger: 'blur' },
+            { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
+          ],
+          email: [
+            { required: false, message: '请输入邮箱', trigger: 'blur' },
+            { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+          ]
+        }
       }
     },
     created() {
@@ -160,6 +248,45 @@
       },
       handleViewDetail(index, row) {
         this.$router.push({path: '/ums/memberDetail', query: {id: row.id}})
+      },
+      handleAddMember() {
+        this.addMemberDialogVisible = true;
+        this.resetMemberForm();
+      },
+      resetMemberForm() {
+        this.memberForm = {
+          username: '',
+          password: '',
+          nickname: '',
+          phone: '',
+          email: '',
+          gender: 0,
+          birthday: null,
+          status: 1
+        };
+        if (this.$refs.memberForm) {
+          this.$refs.memberForm.resetFields();
+        }
+      },
+      handleCreateMember(formName) {
+        this.$refs[formName].validate((valid) => {
+          if (valid) {
+            createMember(this.memberForm).then(response => {
+              this.$message({
+                message: '添加会员成功',
+                type: 'success',
+                duration: 1000
+              });
+              this.addMemberDialogVisible = false;
+              this.getList();
+            }).catch(error => {
+              console.error('添加会员失败:', error);
+            });
+          } else {
+            console.log('表单验证失败');
+            return false;
+          }
+        });
       }
     }
   }
