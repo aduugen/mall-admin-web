@@ -105,11 +105,8 @@
         <el-form-item label="会员昵称" prop="nickname">
           <el-input v-model="memberForm.nickname" placeholder="请输入会员昵称"></el-input>
         </el-form-item>
-        <el-form-item label="登录名" prop="username">
-          <el-input v-model="memberForm.username" placeholder="请输入登录名"></el-input>
-        </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="memberForm.password" type="password" placeholder="请输入密码"></el-input>
+          <el-input v-model="memberForm.password" type="password" placeholder="请输入密码，默认为123456"></el-input>
         </el-form-item>
         <el-form-item label="手机号码" prop="phone">
           <el-input v-model="memberForm.phone" placeholder="请输入手机号码"></el-input>
@@ -162,7 +159,6 @@
         multipleSelection: [],
         addMemberDialogVisible: false,
         memberForm: {
-          username: '',
           password: '',
           nickname: '',
           phone: '',
@@ -172,12 +168,8 @@
           status: 1
         },
         rules: {
-          username: [
-            { required: true, message: '请输入登录名', trigger: 'blur' },
-            { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
-          ],
           password: [
-            { required: true, message: '请输入密码', trigger: 'blur' },
+            { required: false, message: '请输入密码', trigger: 'blur' },
             { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
           ],
           nickname: [
@@ -255,7 +247,6 @@
       },
       resetMemberForm() {
         this.memberForm = {
-          username: '',
           password: '',
           nickname: '',
           phone: '',
@@ -271,7 +262,11 @@
       handleCreateMember(formName) {
         this.$refs[formName].validate((valid) => {
           if (valid) {
-            createMember(this.memberForm).then(response => {
+            // 使用手机号作为登录名
+            const memberData = { ...this.memberForm };
+            memberData.username = memberData.phone;
+            
+            createMember(memberData).then(response => {
               this.$message({
                 message: '添加会员成功',
                 type: 'success',
