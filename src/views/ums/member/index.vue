@@ -355,10 +355,6 @@
           }]
         },
         rules: {
-          password: [
-            { required: false, message: '请输入密码', trigger: 'blur' },
-            { min: 6, max: 20, message: '长度在 6 到 20 个字符', trigger: 'blur' }
-          ],
           nickname: [
             { required: true, message: '请输入会员昵称', trigger: 'blur' }
           ],
@@ -367,32 +363,36 @@
             { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
           ],
           email: [
-            { required: false, message: '请输入邮箱', trigger: 'blur' },
+            { required: true, message: '请输入邮箱', trigger: 'blur' },
             { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
           ],
+          password: [
+            { required: true, message: '请输入密码', trigger: 'blur' },
+            { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
+          ],
           memberLevelId: [
-            { required: true, message: '请选择会员等级', trigger: 'change' }
+            { required: false, message: '请选择会员等级', trigger: 'change' }
           ]
         },
         addressRules: {
           name: [
-            { required: true, message: '请输入收货人姓名', trigger: 'blur' }
+            { required: false, message: '请输入收货人姓名', trigger: 'blur' }
           ],
           phoneNumber: [
-            { required: true, message: '请输入手机号码', trigger: 'blur' },
+            { required: false, message: '请输入手机号码', trigger: 'blur' },
             { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码', trigger: 'blur' }
           ],
           province: [
-            { required: true, message: '请输入省份', trigger: 'blur' }
+            { required: false, message: '请输入省份', trigger: 'blur' }
           ],
           city: [
-            { required: true, message: '请输入城市', trigger: 'blur' }
+            { required: false, message: '请输入城市', trigger: 'blur' }
           ],
           region: [
-            { required: true, message: '请输入区县', trigger: 'blur' }
+            { required: false, message: '请输入区县', trigger: 'blur' }
           ],
           detailAddress: [
-            { required: true, message: '请输入详细地址', trigger: 'blur' }
+            { required: false, message: '请输入详细地址', trigger: 'blur' }
           ]
         }
       }
