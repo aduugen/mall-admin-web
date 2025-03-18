@@ -102,6 +102,15 @@
               <el-tag v-else type="info">未知</el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="退货状态" width="120" align="center">
+            <template slot-scope="scope">
+              <el-tag v-if="scope.row.returnStatus === 0 || scope.row.returnStatus === undefined || scope.row.returnStatus === null" type="success">正常订单</el-tag>
+              <el-tag v-else-if="scope.row.returnStatus === 1" type="warning">申请中</el-tag>
+              <el-tag v-else-if="scope.row.returnStatus === 2" type="danger">已退货</el-tag>
+              <el-tag v-else-if="scope.row.returnStatus === 3" type="info">已拒绝</el-tag>
+              <el-tag v-else type="info">未知</el-tag>
+            </template>
+          </el-table-column>
         </el-table>
       </div>
       <div class="pagination-container">
@@ -194,6 +203,7 @@
                 if (item.payType !== undefined) item.payType = Number(item.payType);
                 if (item.sourceType !== undefined) item.sourceType = Number(item.sourceType);
                 if (item.status !== undefined) item.status = Number(item.status);
+                if (item.returnStatus !== undefined) item.returnStatus = Number(item.returnStatus);
                 
                 return item;
               });

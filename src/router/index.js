@@ -71,7 +71,7 @@ export const asyncRouterMap = [
         path: 'stockAlarm',
         name: 'stockAlarm',
         component: () => import('@/views/pms/stockAlarm/index'),
-        meta: {title: '库存告警', icon: 'warning'}
+        meta: {title: '库存告警', icon: 'product-warning'}
       },
       {
         path: 'addProductCate',
