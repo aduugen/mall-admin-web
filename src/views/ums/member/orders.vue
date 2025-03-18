@@ -53,7 +53,7 @@
                   border>
           <el-table-column type="selection" width="60" align="center"></el-table-column>
           <el-table-column label="订单编号" width="160" align="center">
-            <template slot-scope="scope">{{scope.row.orderSn}}</template>
+            <template slot-scope="scope">{{scope.row.orderSn || '暂无数据'}}</template>
           </el-table-column>
           <el-table-column label="提交时间" width="160" align="center">
             <template slot-scope="scope">{{scope.row.createTime | formatTime}}</template>
@@ -66,25 +66,28 @@
           </el-table-column>
           <el-table-column label="支付方式" width="120" align="center">
             <template slot-scope="scope">
-              <el-tag v-if="scope.row.payType===0">未支付</el-tag>
-              <el-tag v-if="scope.row.payType===1" type="success">支付宝</el-tag>
-              <el-tag v-if="scope.row.payType===2" type="primary">微信</el-tag>
+              <el-tag v-if="scope.row.payType === 0">未支付</el-tag>
+              <el-tag v-else-if="scope.row.payType === 1" type="success">支付宝</el-tag>
+              <el-tag v-else-if="scope.row.payType === 2" type="primary">微信</el-tag>
+              <el-tag v-else type="info">未知</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="订单来源" width="120" align="center">
             <template slot-scope="scope">
-              <el-tag v-if="scope.row.sourceType===0">PC订单</el-tag>
-              <el-tag v-if="scope.row.sourceType===1" type="success">APP订单</el-tag>
+              <el-tag v-if="scope.row.sourceType === 0">PC订单</el-tag>
+              <el-tag v-else-if="scope.row.sourceType === 1" type="success">APP订单</el-tag>
+              <el-tag v-else type="info">未知</el-tag>
             </template>
           </el-table-column>
           <el-table-column label="订单状态" width="120" align="center">
             <template slot-scope="scope">
-              <el-tag v-if="scope.row.status===0">待付款</el-tag>
-              <el-tag v-if="scope.row.status===1" type="success">待发货</el-tag>
-              <el-tag v-if="scope.row.status===2" type="info">已发货</el-tag>
-              <el-tag v-if="scope.row.status===3" type="success">已完成</el-tag>
-              <el-tag v-if="scope.row.status===4" type="danger">已关闭</el-tag>
-              <el-tag v-if="scope.row.status===5" type="warning">无效订单</el-tag>
+              <el-tag v-if="scope.row.status === 0">待付款</el-tag>
+              <el-tag v-else-if="scope.row.status === 1" type="success">待发货</el-tag>
+              <el-tag v-else-if="scope.row.status === 2" type="info">已发货</el-tag>
+              <el-tag v-else-if="scope.row.status === 3" type="success">已完成</el-tag>
+              <el-tag v-else-if="scope.row.status === 4" type="danger">已关闭</el-tag>
+              <el-tag v-else-if="scope.row.status === 5" type="warning">无效订单</el-tag>
+              <el-tag v-else type="info">未知</el-tag>
             </template>
           </el-table-column>
         </el-table>
@@ -144,7 +147,7 @@
         if (price == null) {
           return '0.00';
         }
-        return price.toFixed(2);
+        return parseFloat(price).toFixed(2);
       }
     },
     methods: {
@@ -159,6 +162,10 @@
           this.listLoading = false;
           this.list = response.data.list;
           this.total = response.data.total;
+          console.log('订单数据:', this.list);
+        }).catch(error => {
+          console.error('获取订单数据失败:', error);
+          this.listLoading = false;
         });
       },
       handleSelectionChange(val) {
