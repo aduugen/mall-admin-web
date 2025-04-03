@@ -3,9 +3,10 @@ import { Message, MessageBox } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 
+export const API_BASE_URL_ADMIN = 'http://192.168.1.10:8080';
 // 创建axios实例
 const service = axios.create({
-  baseURL: API_BASE_URL, // 修正为BASE_API
+  baseURL: API_BASE_URL_ADMIN, // 修正为BASE_API
   timeout: 30000, // 请求超时时间增加到30秒
   headers: {
     'Content-Type': 'application/json;charset=utf-8'
