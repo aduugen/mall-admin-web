@@ -3,7 +3,7 @@ import { Message, MessageBox } from 'element-ui'
 import store from '@/store'
 import { getToken } from '@/utils/auth'
 
-export const API_BASE_URL_ADMIN = 'http://192.168.1.10:8080';
+export const API_BASE_URL_ADMIN = 'http://192.168.1.6:8080';
 // 创建axios实例
 const service = axios.create({
   baseURL: API_BASE_URL_ADMIN, // 修正为BASE_API
