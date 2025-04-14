@@ -79,28 +79,28 @@
             <div class="un-handle-item">
               <img :src="wait_handle_icon" class="total-icon">
               <div class="total-title">待处理退货订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.wait_handle_count : 0 }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.pendingCount : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="return_processing_icon" class="total-icon">
               <div class="total-title">退货处理中订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.return_processing_count : 0 }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.processingCount : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="return_received_icon" class="total-icon">
               <div class="total-title">退货已接收订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.return_received_count : 0 }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.finishedCount : 0 }}</div>
             </div>
           </el-col>
           <el-col :span="4">
             <div class="un-handle-item">
               <img :src="rejected_icon" class="total-icon">
               <div class="total-title">拒绝退货订单</div>
-              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.rejected_count : 0 }}</div>
+              <div class="total-value">{{ orderReturnApplyStatistic ? orderReturnApplyStatistic.rejectedCount : 0 }}</div>
             </div>
           </el-col>
         </el-row>
@@ -370,6 +370,7 @@
       });
       getOrderReturnApplyStatistic().then(response => {
         this.orderReturnApplyStatistic = response.data;
+        console.log(this.orderReturnApplyStatistic);
       }).catch(error => {
         console.error('Error fetching order return apply statistic:', error);
       });
