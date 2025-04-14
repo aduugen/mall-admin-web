@@ -67,23 +67,58 @@
                 @selection-change="handleSelectionChange"
                 v-loading="listLoading" border>
         <el-table-column type="selection" width="60" align="center"></el-table-column>
-        <el-table-column label="服务单号" width="180" align="center">
+        <el-table-column label="售后单号" width="180" align="center">
           <template slot-scope="scope">{{scope.row.id}}</template>
         </el-table-column>
         <el-table-column label="申请时间" width="180" align="center">
           <template slot-scope="scope">{{scope.row.createTime | formatTime}}</template>
         </el-table-column>
-        <el-table-column label="用户账号" align="center">
+        <el-table-column label="用户名" width="180" align="center">
           <template slot-scope="scope">{{scope.row.memberUsername}}</template>
         </el-table-column>
-        <el-table-column label="退款金额" width="180" align="center">
-          <template slot-scope="scope">￥{{scope.row | formatReturnAmount}}</template>
+        <el-table-column label="退货商品" width="350" align="center">
+          <template slot-scope="scope">
+            <div v-if="scope.row.afterSaleItemList && scope.row.afterSaleItemList.length > 0">
+              <div style="display: flex; align-items: center;">
+                <img :src="scope.row.afterSaleItemList[0].productPic" style="height: 80px; width: 80px">
+                <div style="margin-left: 10px; text-align: left;">
+                  <p>{{ scope.row.afterSaleItemList[0].productName }}</p>
+                  <p>                  
+                    <span v-if="scope.row.afterSaleItemList[0].productAttr">
+                       {{ formatProductAttr(scope.row.afterSaleItemList[0].productAttr) }}
+                    </span>
+                  </p>
+                  <p>单价：￥{{ scope.row.afterSaleItemList[0].productRealPrice }}</p>
+                   <p>数量：{{ scope.row.afterSaleItemList[0].returnQuantity }}</p>
+                </div>
+              </div>
+              <div v-if="scope.row.afterSaleItemList.length > 1" style="text-align: center; color: #909399; font-size: 12px; margin-top: 5px;">
+                (共 {{ scope.row.afterSaleItemList.length }} 件商品)
+              </div>
+            </div>
+            <div v-else>
+                无商品信息
+            </div>
+          </template>
         </el-table-column>
-        <el-table-column label="申请状态" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.status | formatStatus}}</template>
+        <el-table-column label="退货总数" width="100" align="center">
+            <template slot-scope="scope">
+                {{ calcTotalQuantity(scope.row) }}
+            </template>
+        </el-table-column>
+        <el-table-column label="退款金额" width="120" align="center">
+           <template slot-scope="scope">
+             ￥{{ calcTotalAmount(scope.row) }}
+           </template>
+         </el-table-column>
+        <el-table-column label="申请状态" width="140" align="center">
+          <template slot-scope="scope">{{ scope.row.status | formatStatus }}</template>
         </el-table-column>
         <el-table-column label="处理时间" width="180" align="center">
           <template slot-scope="scope">{{scope.row.handleTime | formatTime}}</template>
+        </el-table-column>
+        <el-table-column label="处理人" width="180" align="center">
+          <template slot-scope="scope">{{scope.row.handleMan | formatHandleMan}}</template>
         </el-table-column>
         <el-table-column label="操作" width="180" align="center">
           <template slot-scope="scope">
@@ -190,10 +225,16 @@
         return formatDate(date, 'yyyy-MM-dd hh:mm:ss')
       },
       formatStatus(status){
-        for(let i=0;i<defaultStatusOptions.length;i++){
-          if(status===defaultStatusOptions[i].value){
-            return defaultStatusOptions[i].label;
-          }
+        if (status === 0) {
+          return '待处理';
+        } else if (status === 1) {
+          return '退货中';
+        } else if (status === 2) {
+          return '已完成';
+        } else if (status === 3) {
+          return '已拒绝';
+        } else {
+          return '未知状态';
         }
       },
       formatReturnAmount(row){
@@ -261,7 +302,36 @@
           this.listLoading = false;
           this.list = response.data.list;
           this.total = response.data.total;
+        }).catch(() => {
+          this.listLoading = false;
         });
+      },
+      calcTotalQuantity(row) {
+        if (!row.afterSaleItemList || row.afterSaleItemList.length === 0) {
+          return 0;
+        }
+        return row.afterSaleItemList.reduce((sum, item) => sum + (item.returnQuantity || 0), 0);
+      },
+      calcTotalAmount(row) {
+        if (!row.afterSaleItemList || row.afterSaleItemList.length === 0) {
+          return '0.00';
+        }
+        const total = row.afterSaleItemList.reduce((sum, item) => {
+          const price = item.productRealPrice || 0;
+          const quantity = item.returnQuantity || 0;
+          return sum + (price * quantity);
+        }, 0);
+        return total.toFixed(2);
+      },
+      formatProductAttr(jsonAttr) {
+        if (!jsonAttr || jsonAttr === '[]') return '';
+        try {
+          let attrArr = JSON.parse(jsonAttr);
+          return attrArr.map(item => item.key + ":" + item.value).join('; ');
+        } catch (e) {
+          console.error("Error parsing productAttr:", e);
+          return jsonAttr;
+        }
       }
     }
   }
