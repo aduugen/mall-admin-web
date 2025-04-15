@@ -1,7 +1,10 @@
 <template>
   <div class="detail-container">
-    <el-card shadow="never">
-      <span class="font-title-medium">退货商品</span>
+    <el-card shadow="never" class="card-container">
+      <div class="card-header">
+        <i class="el-icon-goods"></i>
+        <span class="font-title-medium">退货商品</span>
+      </div>
       <el-table
         border
         class="standard-margin"
@@ -9,13 +12,23 @@
         :data="productList">
         <el-table-column label="商品图片" width="120" align="center">
           <template slot-scope="scope">
-            <img style="height:80px" :src="scope.row.productPic">
+            <div class="image-wrapper">
+              <img 
+                style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer;" 
+                :src="scope.row.productPic"
+                @click="previewSingleImage(scope.row.productPic)"
+                alt="商品图片"
+              >
+              <div v-if="!scope.row.productPic" class="image-placeholder">
+                <i class="el-icon-picture-outline"></i>
+              </div>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="商品名称" align="center">
           <template slot-scope="scope">
-            <p>{{scope.row.productName}}</p>
-            <p>品牌：{{scope.row.productBrand}}</p>
+            <p class="product-name">{{scope.row.productName}}</p>
+            <p class="product-brand">品牌：{{scope.row.productBrand}}</p>
           </template>
         </el-table-column>
         <el-table-column label="价格/货号" width="180" align="center">
@@ -25,7 +38,7 @@
               <span class="price-value">￥{{scope.row.productRealPrice || scope.row.productPrice || 0 | formatMoney}}</span>
               <span class="original-price" v-if="scope.row.productRealPrice && scope.row.productPrice && scope.row.productRealPrice != scope.row.productPrice">(原价:￥{{scope.row.productPrice | formatMoney}})</span>
             </p>
-            <p>货号：NO.{{scope.row.productId}}</p>
+            <p class="product-sn">货号：NO.{{scope.row.productId}}</p>
           </template>
         </el-table-column>
         <el-table-column label="属性" width="200" align="center">
@@ -47,7 +60,8 @@
         </el-table-column>
         <el-table-column label="退货原因" prop="returnReason" align="center" show-overflow-tooltip>
           <template slot-scope="scope">
-            {{ scope.row.returnReason || '无' }}
+            <el-tag size="small" type="info" v-if="scope.row.returnReason">{{ scope.row.returnReason }}</el-tag>
+            <span v-else>无</span>
           </template>
         </el-table-column>
         <el-table-column label="凭证图片" width="100" align="center">
@@ -73,153 +87,259 @@
           </template>
         </el-table-column>
       </el-table>
-      <div style="float:right;margin-top:15px;margin-bottom:15px">
+      <div class="total-amount">
         <span class="font-title-medium">合计退款：</span>
         <span class="font-title-medium color-danger">￥{{calculatedTotalAmount | formatMoney}}</span>
       </div>
     </el-card>
-    <el-card shadow="never" class="standard-margin">
-      <span class="font-title-medium">服务单信息</span>
-      <div class="form-container-border">
-        <el-row>
-          <el-col :span="6" class="form-border form-left-bg font-small">服务单号</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.id}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">申请状态</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.status | formatStatus}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="6" class="form-border form-left-bg font-small" style="line-height: 32px">订单信息</el-col>
-          <el-col class="form-border font-small" :span="18">
-            <p>订单号：{{orderReturnApply.orderSn}}</p>
-            <p v-if="orderReturnApply.orderId">订单ID：{{orderReturnApply.orderId}}</p>
-            <el-button type="text" size="small" @click="handleViewOrder">查看订单详情</el-button>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">申请时间</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.createTime | formatTime}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">用户信息</el-col>
-          <el-col class="form-border font-small" :span="18">
-            <p>账号：{{orderReturnApply.memberUsername}}</p>
-            <p v-if="orderReturnApply.memberNickname">昵称：{{orderReturnApply.memberNickname}}</p>
-            <p v-if="orderReturnApply.memberPhone">注册手机：{{orderReturnApply.memberPhone}}</p>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">联系人信息</el-col>
-          <el-col class="form-border font-small" :span="18">
-            <p>姓名：{{orderReturnApply.returnName}}</p>
-            <p>电话：{{orderReturnApply.returnPhone}}</p>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">问题描述</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.description || '无'}}</el-col>
-        </el-row>
+    
+    <el-card shadow="never" class="standard-margin card-container">
+      <div class="card-header">
+        <i class="el-icon-document"></i>
+        <span class="font-title-medium">售后单信息</span>
       </div>
-      <div class="form-container-border">
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">订单总金额</el-col>
-          <el-col class="form-border font-small" :span="18">￥{{orderReturnApply.orderTotalAmount | formatMoney}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6" style="line-height:32px">确认退款金额</el-col>
-          <el-col class="form-border font-small" style="height:52px" :span="18">
-            <span class="price-value">￥</span>
-            <el-input size="small" v-model="updateStatusParam.returnAmount"
-                      :disabled="orderReturnApply.status!==0"
-                      style="width:200px;margin-left: 5px"></el-input>
-            <span class="font-extra-small color-info" style="margin-left: 10px;">(系统计算合计退款: ￥{{calculatedTotalAmount | formatMoney}})</span>
-          </el-col>
-        </el-row>
-        <div v-show="orderReturnApply.status!==3">
-          <el-row>
-            <el-col class="form-border form-left-bg font-small" :span="6" style="line-height:32px">选择收货点</el-col>
-            <el-col class="form-border font-small" style="height:52px" :span="18">
-              <el-select size="small"
-                         style="width:200px"
-                         :disabled="orderReturnApply.status!==0"
-                         v-model="updateStatusParam.companyAddressId">
-                <el-option v-for="address in companyAddressList"
-                           :key="address.id"
-                           :value="address.id"
-                           :label="address.addressName">
-                </el-option>
-              </el-select>
-            </el-col>
-          </el-row>
-          <el-row>
-            <el-col class="form-border form-left-bg font-small" :span="6">收货人姓名</el-col>
-            <el-col class="form-border font-small" :span="18">{{currentAddress ? currentAddress.name : '加载中...'}}</el-col>
-          </el-row>
-          <el-row>
-            <el-col class="form-border form-left-bg font-small" :span="6">所在区域</el-col>
-            <el-col class="form-border font-small" :span="18">{{currentAddress | formatRegion}}</el-col>
-          </el-row>
-          <el-row>
-            <el-col class="form-border form-left-bg font-small" :span="6">详细地址</el-col>
-            <el-col class="form-border font-small" :span="18">{{currentAddress ? currentAddress.detailAddress : '加载中...'}}</el-col>
-          </el-row>
-          <el-row>
-            <el-col class="form-border form-left-bg font-small" :span="6">联系电话</el-col>
-            <el-col class="form-border font-small" :span="18">{{currentAddress ? currentAddress.phone : '加载中...'}}</el-col>
-          </el-row>
+      
+      <!-- 售后单基本信息 -->
+      <div class="info-section">
+        <div class="info-card-wrapper">
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="el-icon-tickets"></i>
+              <span>单据信息</span>
+            </div>
+            <div class="info-card-content">
+              <div class="info-item">
+                <div class="info-label">售后单号</div>
+                <div class="info-value"><span>{{orderReturnApply.id}}</span></div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">申请状态</div>
+                <div class="info-value">
+                  <el-tag :type="getStatusType(orderReturnApply.status)">
+                    {{orderReturnApply.status | formatStatus}}
+                  </el-tag>
+                </div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">申请时间</div>
+                <div class="info-value">{{orderReturnApply.createTime | formatTime}}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="el-icon-user"></i>
+              <span>用户信息</span>
+            </div>
+            <div class="info-card-content">
+              <div class="info-item">
+                <div class="info-label">会员账号</div>
+                <div class="info-value">{{orderReturnApply.memberId}}</div>
+              </div>
+              <div class="info-item" v-if="orderReturnApply.memberNickname">
+                <div class="info-label">会员昵称</div>
+                <div class="info-value">{{orderReturnApply.memberNickname}}</div>
+              </div>
+              <div class="info-item" v-if="orderReturnApply.memberPhone">
+                <div class="info-label">联系方式</div>
+                <div class="info-value">{{orderReturnApply.memberPhone}}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="info-card">
+            <div class="info-card-header">
+              <i class="el-icon-shopping-cart-full"></i>
+              <span>订单信息</span>
+            </div>
+            <div class="info-card-content">
+              <div class="info-item">
+                <div class="info-label">订单号</div>
+                <div class="info-value">{{orderReturnApply.orderSn}}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">订单总金额</div>
+                <div class="info-value price-value">￥{{orderReturnApply.orderTotalAmount | formatMoney}}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">查看订单</div>
+                <div class="info-value">
+                  <el-button type="primary" size="mini" plain icon="el-icon-view" @click="handleViewOrder">查看详情</el-button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="form-container-border" v-show="orderReturnApply.status!==0">
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">处理人员</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.handleMan || '未处理'}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">处理时间</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.handleTime | formatTime}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">处理备注</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.handleNote || '无'}}</el-col>
-        </el-row>
-      </div>
-      <div class="form-container-border" v-show="orderReturnApply.status===2">
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">收货人员</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.receiveMan || '未指定'}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6" >收货时间</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.receiveTime | formatTime}}</el-col>
-        </el-row>
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6">收货备注</el-col>
-          <el-col class="form-border font-small" :span="18">{{orderReturnApply.receiveNote || '无'}}</el-col>
-        </el-row>
-      </div>
-      <div class="form-container-border" v-show="orderReturnApply.status===0">
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6" style="line-height:32px">处理备注</el-col>
-          <el-col class="form-border font-small" :span="18">
-            <el-input type="textarea" :rows="3" size="small" v-model="updateStatusParam.handleNote" placeholder="请输入处理备注" style="width:300px"></el-input>
-          </el-col>
-        </el-row>
-      </div>
-      <div class="form-container-border" v-show="orderReturnApply.status===1">
-        <el-row>
-          <el-col class="form-border form-left-bg font-small" :span="6" style="line-height:32px">收货备注</el-col>
-          <el-col class="form-border font-small" :span="18">
-            <el-input type="textarea" :rows="3" size="small" v-model="updateStatusParam.receiveNote" placeholder="请输入收货备注" style="width:300px"></el-input>
-          </el-col>
-        </el-row>
-      </div>
-      <div style="margin-top:15px;text-align: center" v-show="orderReturnApply.status===0">
-        <el-button type="primary" size="small" @click="handleUpdateStatus(1)">确认退货</el-button>
-        <el-button type="danger" size="small" @click="handleUpdateStatus(3)">拒绝退货</el-button>
-      </div>
-      <div style="margin-top:15px;text-align: center" v-show="orderReturnApply.status===1">
-        <el-button type="primary" size="small" @click="handleUpdateStatus(2)">确认收货</el-button>
+        
+        <!-- 退款金额部分 -->
+        <div class="refund-section">
+          <div class="refund-card">
+            <div class="refund-card-title">
+              <i class="el-icon-money"></i>
+              <span>退款金额</span>
+            </div>
+            <div class="refund-card-content">
+              <div class="refund-amount">
+                <span class="refund-label">系统计算金额：</span>
+                <span class="refund-value">￥{{calculatedTotalAmount | formatMoney}}</span>
+              </div>
+              <div class="refund-input">
+                <span class="refund-label">确认退款金额：</span>
+                <span class="price-value">￥</span>
+                <el-input 
+                  size="small" 
+                  v-model="updateStatusParam.returnAmount"
+                  :disabled="orderReturnApply.status!==0"
+                  style="width:200px;margin-left: 5px">
+                </el-input>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 收货信息部分 -->
+        <div class="address-section" v-show="orderReturnApply.status!==3">
+          <div class="address-card">
+            <div class="address-card-title">
+              <i class="el-icon-location"></i>
+              <span>收货信息</span>
+            </div>
+            <div class="address-card-content">
+              <div class="address-select" v-show="orderReturnApply.status===0">
+                <span class="address-label">选择收货点：</span>
+                <el-select 
+                  size="small"
+                  style="width: 200px"
+                  :disabled="orderReturnApply.status!==0"
+                  v-model="updateStatusParam.companyAddressId">
+                  <el-option 
+                    v-for="address in companyAddressList"
+                    :key="address.id"
+                    :value="address.id"
+                    :label="address.addressName">
+                  </el-option>
+                </el-select>
+              </div>
+              
+              <div class="address-info">
+                <div class="address-item">
+                  <span class="address-info-label">收货人：</span>
+                  <span class="address-info-value">{{currentAddress ? currentAddress.name : '加载中...'}}</span>
+                </div>
+                <div class="address-item">
+                  <span class="address-info-label">所在地区：</span>
+                  <span class="address-info-value">{{currentAddress | formatRegion}}</span>
+                </div>
+                <div class="address-item">
+                  <span class="address-info-label">详细地址：</span>
+                  <span class="address-info-value">{{currentAddress ? currentAddress.detailAddress : '加载中...'}}</span>
+                </div>
+                <div class="address-item">
+                  <span class="address-info-label">联系电话：</span>
+                  <span class="address-info-value">{{currentAddress ? currentAddress.phone : '加载中...'}}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 处理信息 -->
+        <div class="process-section" v-show="orderReturnApply.status!==0">
+          <div class="process-card">
+            <div class="process-card-title">
+              <i class="el-icon-s-operation"></i>
+              <span>处理信息</span>
+            </div>
+            <div class="process-card-content">
+              <div class="process-item">
+                <span class="process-info-label">处理人员：</span>
+                <span class="process-info-value">{{orderReturnApply.handleMan || '未处理'}}</span>
+              </div>
+              <div class="process-item">
+                <span class="process-info-label">处理时间：</span>
+                <span class="process-info-value">{{orderReturnApply.handleTime | formatTime}}</span>
+              </div>
+              <div class="process-item">
+                <span class="process-info-label">处理备注：</span>
+                <span class="process-info-value">{{orderReturnApply.handleNote || '无'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 收货信息 -->
+        <div class="receive-section" v-show="orderReturnApply.status===2">
+          <div class="receive-card">
+            <div class="receive-card-title">
+              <i class="el-icon-box"></i>
+              <span>收货信息</span>
+            </div>
+            <div class="receive-card-content">
+              <div class="receive-item">
+                <span class="receive-info-label">收货人员：</span>
+                <span class="receive-info-value">{{orderReturnApply.receiveMan || '未指定'}}</span>
+              </div>
+              <div class="receive-item">
+                <span class="receive-info-label">收货时间：</span>
+                <span class="receive-info-value">{{orderReturnApply.receiveTime | formatTime}}</span>
+              </div>
+              <div class="receive-item">
+                <span class="receive-info-label">收货备注：</span>
+                <span class="receive-info-value">{{orderReturnApply.receiveNote || '无'}}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 备注输入 -->
+        <div class="remark-section" v-show="orderReturnApply.status===0">
+          <div class="remark-card">
+            <div class="remark-card-title">
+              <i class="el-icon-edit-outline"></i>
+              <span>处理备注</span>
+            </div>
+            <div class="remark-card-content">
+              <el-input 
+                type="textarea" 
+                :rows="3" 
+                size="small" 
+                v-model="updateStatusParam.handleNote" 
+                placeholder="请输入处理备注" 
+                style="width: 100%">
+              </el-input>
+            </div>
+          </div>
+        </div>
+        
+        <div class="remark-section" v-show="orderReturnApply.status===1">
+          <div class="remark-card">
+            <div class="remark-card-title">
+              <i class="el-icon-edit-outline"></i>
+              <span>收货备注</span>
+            </div>
+            <div class="remark-card-content">
+              <el-input 
+                type="textarea" 
+                :rows="3" 
+                size="small" 
+                v-model="updateStatusParam.receiveNote" 
+                placeholder="请输入收货备注" 
+                style="width: 100%">
+              </el-input>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 按钮区域 -->
+        <div class="action-buttons" v-show="orderReturnApply.status===0">
+          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(1)">确认退货</el-button>
+          <el-button type="danger" size="small" icon="el-icon-close" @click="handleUpdateStatus(3)">拒绝退货</el-button>
+        </div>
+        <div class="action-buttons" v-show="orderReturnApply.status===1">
+          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(2)">确认收货</el-button>
+        </div>
+        
       </div>
     </el-card>
   </div>
@@ -334,6 +454,15 @@
       }
     },
     methods: {
+      getStatusType(status) {
+        switch(status) {
+          case 0: return 'warning';
+          case 1: return 'primary';
+          case 2: return 'success';
+          case 3: return 'danger';
+          default: return 'info';
+        }
+      },
       formatProductAttr(jsonAttr) {
         if (!jsonAttr || jsonAttr === '[]') return '';
         try {
@@ -358,6 +487,13 @@
             return [];
         }
         return picsStr.split(',').filter(pic => pic && pic.trim() !== '');
+      },
+      previewSingleImage(url) {
+        if (url) {
+          window.open(url, '_blank');
+        } else {
+          this.$message.warning('无效的图片链接');
+        }
       },
       handleViewOrder() {
         if (!this.orderReturnApply || !this.orderReturnApply.orderId) {
@@ -416,11 +552,6 @@
           });
         }).catch(() => {
         });
-      },
-      previewSingleImage(url) {
-        if (url) {
-            window.open(url, '_blank');
-        }
       }
     }
   }
@@ -432,40 +563,239 @@
     margin: 20px auto;
   }
 
+  .card-container {
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    transition: all 0.3s;
+  }
+  
+  .card-container:hover {
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.2);
+  }
+  
+  .card-header {
+    border-bottom: 1px solid #ebeef5;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    color: #303133;
+  }
+  
+  .card-header i {
+    margin-right: 8px;
+    font-size: 18px;
+    color: #409EFF;
+  }
+
   .standard-margin {
     margin-top: 15px;
   }
-  .form-border {
-    border-right: 1px solid #DCDFE6;
-    border-bottom: 1px solid #DCDFE6;
-    padding: 10px;
-    min-height: 40px;
+  
+  /* 卡片式信息样式 */
+  .info-section {
+    padding: 10px 0;
+  }
+  
+  .info-card-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px;
+  }
+  
+  .info-card {
+    flex: 1;
+    min-width: 250px;
+    margin: 0 10px 20px 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+    background-color: #fff;
+  }
+  
+  .info-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+  }
+  
+  .info-card-header {
     display: flex;
     align-items: center;
+    padding: 12px 15px;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid #ebeef5;
+    color: #303133;
+    font-weight: 500;
   }
   
-  .form-container-border .el-row:last-child .form-border{
-     border-bottom: none;
-  }
-
-  .form-container-border {
-    border-left: 1px solid #DCDFE6;
-    border-top: 1px solid #DCDFE6;
-    margin-top: 15px;
-  }
-
-  .form-left-bg {
-    background: #F2F6FC;
-    justify-content: center;
+  .info-card-header i {
+    margin-right: 8px;
+    color: #409EFF;
   }
   
-  .form-border p {
-      margin: 2px 0;
+  .info-card-content {
+    padding: 12px 15px;
   }
   
-  .price-info p, .quantity-info p {
-    margin: 0;
-    line-height: 1.4;
+  .info-item {
+    display: flex;
+    margin-bottom: 10px;
+  }
+  
+  .info-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .info-label {
+    width: 80px;
+    color: #606266;
+    flex-shrink: 0;
+    font-size: 13px;
+  }
+  
+  .info-value {
+    flex: 1;
+    color: #303133;
+    font-size: 13px;
+    word-break: break-all;
+  }
+  
+  /* 退款金额部分 */
+  .refund-section, 
+  .address-section, 
+  .process-section, 
+  .receive-section,
+  .remark-section {
+    margin-top: 20px;
+  }
+  
+  .refund-card,
+  .address-card,
+  .process-card,
+  .receive-card,
+  .remark-card {
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    background-color: #fff;
+  }
+  
+  .refund-card-title,
+  .address-card-title,
+  .process-card-title,
+  .receive-card-title,
+  .remark-card-title {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: #f5f7fa;
+    border-bottom: 1px solid #ebeef5;
+    color: #303133;
+    font-weight: 500;
+  }
+  
+  .refund-card-title i,
+  .address-card-title i,
+  .process-card-title i,
+  .receive-card-title i,
+  .remark-card-title i {
+    margin-right: 8px;
+    color: #409EFF;
+  }
+  
+  .refund-card-content,
+  .address-card-content,
+  .process-card-content,
+  .receive-card-content,
+  .remark-card-content {
+    padding: 15px;
+  }
+  
+  .refund-amount,
+  .refund-input {
+    margin-bottom: 15px;
+  }
+  
+  .refund-label {
+    display: inline-block;
+    width: 110px;
+    font-size: 13px;
+    color: #606266;
+  }
+  
+  .refund-value {
+    font-size: 14px;
+    color: #f56c6c;
+    font-weight: 500;
+  }
+  
+  /* 地址信息 */
+  .address-select {
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px dashed #ebeef5;
+  }
+  
+  .address-label {
+    display: inline-block;
+    width: 110px;
+    font-size: 13px;
+    color: #606266;
+  }
+  
+  .address-info {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  
+  .address-item {
+    width: 50%;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  
+  .address-info-label {
+    color: #606266;
+    margin-right: 5px;
+  }
+  
+  .address-info-value {
+    color: #303133;
+  }
+  
+  /* 处理信息和收货信息 */
+  .process-item,
+  .receive-item {
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  
+  .process-info-label,
+  .receive-info-label {
+    display: inline-block;
+    width: 80px;
+    color: #606266;
+  }
+  
+  .process-info-value,
+  .receive-info-value {
+    color: #303133;
+  }
+  
+  /* 操作按钮 */
+  .action-buttons {
+    margin-top: 20px;
+    text-align: center;
+    padding: 15px 0;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* 其他样式保持不变 */
+  .price-info, .quantity-info {
+    margin: 5px 0;
+    line-height: 1.5;
   }
   
   .price-label, .quantity-label {
@@ -500,12 +830,7 @@
       line-height: 1.4;
       text-align: left;
       padding-left: 10px;
-  }
-  
-  .proof-pics {
-      line-height: normal;
-      padding: 5px;
-      align-items: flex-start !important;
+      border-left: 2px solid #ebeef5;
   }
   
   .color-danger {
@@ -522,7 +847,7 @@
       text-align: center;
   }
 
-  .image-slot {
+  .image-placeholder {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -532,9 +857,53 @@
     color: #909399;
     font-size: 14px;
   }
+  
+  .image-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  
+  .image-wrapper img {
+    display: block;
+    border: 1px solid #ebeef5;
+    transition: all 0.3s;
+  }
+  
+  .image-wrapper img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
 
   .el-icon-picture-outline {
     font-size: 28px;
+  }
+  
+  .total-amount {
+    float: right;
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding: 8px 15px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    border-left: 3px solid #f56c6c;
+  }
+  
+  .product-name {
+    font-weight: 500;
+    margin-bottom: 5px;
+  }
+  
+  .product-brand {
+    color: #606266;
+    font-size: 12px;
+  }
+  
+  .product-sn {
+    color: #909399;
+    font-size: 12px;
   }
 </style>
 
