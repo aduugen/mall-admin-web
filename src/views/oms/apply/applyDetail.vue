@@ -53,14 +53,13 @@
         <el-table-column label="凭证图片" width="100" align="center">
           <template slot-scope="scope">
             <div v-if="getProofPicsArray(scope.row.proofPics).length > 0">
-              <el-image
-                style="width: 60px; height: 60px; margin: 2px; border-radius: 4px; cursor: pointer;"
-                :src="getProofPicsArray(scope.row.proofPics)[0]"  
-                :preview-src-list="getProofPicsArray(scope.row.proofPics)">
-                <div slot="error" class="image-slot">
-                  <i class="el-icon-picture-outline"></i>
-                </div>
-              </el-image>
+              <img 
+                v-for="(picUrl, index) in getProofPicsArray(scope.row.proofPics)"
+                :key="index"
+                :src="picUrl"
+                style="width: 60px; height: 60px; margin: 2px; border-radius: 4px; object-fit: cover; cursor: pointer;" 
+                @click="previewSingleImage(picUrl)" 
+              />
               <div v-if="getProofPicsArray(scope.row.proofPics).length > 1" class="font-extra-small color-info">
                 (共 {{ getProofPicsArray(scope.row.proofPics).length }} 张)
               </div>
@@ -417,6 +416,11 @@
           });
         }).catch(() => {
         });
+      },
+      previewSingleImage(url) {
+        if (url) {
+            window.open(url, '_blank');
+        }
       }
     }
   }
