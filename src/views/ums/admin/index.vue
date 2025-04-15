@@ -1,156 +1,301 @@
-<template> 
+<template> 
   <div class="app-container">
-    <el-card class="filter-container" shadow="never">
-      <div>
-        <i class="el-icon-search"></i>
-        <span>筛选搜索</span>
+    <!-- 搜索区域 -->
+    <el-card class="filter-container" shadow="hover">
+      <div slot="header" class="clearfix">
+        <span class="card-title">
+          <i class="el-icon-search"></i>
+          筛选搜索
+        </span>
         <el-button
-          style="float:right"
+          style="float: right"
           type="primary"
           @click="handleSearchList()"
-          size="small">
+          size="small"
+          icon="el-icon-search">
           查询搜索
         </el-button>
         <el-button
-          style="float:right;margin-right: 15px"
+          style="float: right; margin-right: 15px"
           @click="handleResetSearch()"
-          size="small">
+          size="small"
+          icon="el-icon-refresh">
           重置
         </el-button>
       </div>
-      <div style="margin-top: 15px">
-        <el-form :inline="true" :model="listQuery" size="small" label-width="140px">
-          <el-form-item label="输入搜索：">
-            <el-input v-model="listQuery.keyword" class="input-width" placeholder="帐号/姓名" clearable></el-input>
+      <div class="filter-content">
+        <el-form :inline="true" :model="listQuery" size="small" label-width="100px">
+          <el-form-item label="关键词：">
+            <el-input 
+              v-model="listQuery.keyword" 
+              class="input-width" 
+              placeholder="帐号/姓名" 
+              clearable
+              @keyup.enter.native="handleSearchList()">
+              <template slot="prefix">
+                <i class="el-icon-search" style="color: #909399"></i>
+              </template>
+            </el-input>
           </el-form-item>
         </el-form>
       </div>
     </el-card>
-    <el-card class="operate-container" shadow="never">
-      <i class="el-icon-tickets"></i>
-      <span>数据列表</span>
-      <el-button size="mini" class="btn-add" @click="handleAdd()" style="margin-left: 20px">添加</el-button>
-    </el-card>
-    <div class="table-container">
-      <el-table ref="adminTable"
-                :data="list"
-                style="width: 100%;"
-                v-loading="listLoading" border>
-        <el-table-column label="编号" width="100" align="center">
-          <template slot-scope="scope">{{scope.row.id}}</template>
+    
+    <!-- 数据列表 -->
+    <el-card class="table-card" shadow="hover">
+      <div slot="header" class="clearfix">
+        <span class="card-title">
+          <i class="el-icon-user"></i>
+          用户列表
+        </span>
+        <div class="card-tools">
+          <el-tooltip content="刷新数据" placement="top">
+            <el-button type="text" icon="el-icon-refresh" @click="getList"></el-button>
+          </el-tooltip>
+          <el-button 
+            type="primary" 
+            size="small" 
+            icon="el-icon-plus" 
+            @click="handleAdd()">
+            添加用户
+          </el-button>
+        </div>
+      </div>
+      
+      <el-table 
+        ref="adminTable"
+        :data="list"
+        style="width: 100%"
+        v-loading="listLoading" 
+        border
+        stripe
+        highlight-current-row
+        :header-cell-style="{background:'#f8f9fa',color:'#606266'}"
+        row-key="id">
+        <el-table-column label="编号" width="80" align="center">
+          <template slot-scope="scope">
+            <span class="id-number">{{scope.row.id}}</span>
+          </template>
         </el-table-column>
+        
         <el-table-column label="帐号" align="center">
-          <template slot-scope="scope">{{scope.row.username}}</template>
+          <template slot-scope="scope">
+            <div class="user-info">
+              <i class="el-icon-user-solid user-icon"></i>
+              <span class="user-name">{{scope.row.username}}</span>
+            </div>
+          </template>
         </el-table-column>
+        
         <el-table-column label="姓名" align="center">
-          <template slot-scope="scope">{{scope.row.nickName}}</template>
+          <template slot-scope="scope">
+            <span>{{scope.row.nickName}}</span>
+          </template>
         </el-table-column>
+        
         <el-table-column label="邮箱" align="center">
-          <template slot-scope="scope">{{scope.row.email}}</template>
+          <template slot-scope="scope">
+            <span>{{scope.row.email || '未设置'}}</span>
+          </template>
         </el-table-column>
+        
         <el-table-column label="添加时间" width="160" align="center">
-          <template slot-scope="scope">{{scope.row.createTime | formatDateTime}}</template>
+          <template slot-scope="scope">
+            <div v-if="scope.row.createTime" class="time-info">
+              <i class="el-icon-time time-icon"></i>
+              <span>{{scope.row.createTime | formatDateTime}}</span>
+            </div>
+            <span v-else>N/A</span>
+          </template>
         </el-table-column>
+        
         <el-table-column label="最后登录" width="160" align="center">
-          <template slot-scope="scope">{{scope.row.loginTime | formatDateTime}}</template>
+          <template slot-scope="scope">
+            <div v-if="scope.row.loginTime" class="time-info">
+              <i class="el-icon-date time-icon"></i>
+              <span>{{scope.row.loginTime | formatDateTime}}</span>
+            </div>
+            <span v-else>N/A</span>
+          </template>
         </el-table-column>
-        <el-table-column label="是否启用" width="140" align="center">
+        
+        <el-table-column label="状态" width="100" align="center">
           <template slot-scope="scope">
             <el-switch
               @change="handleStatusChange(scope.$index, scope.row)"
               :active-value="1"
               :inactive-value="0"
+              active-color="#13ce66"
+              inactive-color="#ff4949"
               v-model="scope.row.status">
             </el-switch>
+            <el-tag 
+              size="mini" 
+              :type="scope.row.status === 1 ? 'success' : 'danger'"
+              class="status-tag">
+              {{scope.row.status === 1 ? '启用' : '禁用'}}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
+        
+        <el-table-column label="操作" width="220" align="center">
           <template slot-scope="scope">
-            <el-button size="mini"
-                       type="text"
-                       @click="handleSelectRole(scope.$index, scope.row)">分配角色
-            </el-button>
-            <el-button size="mini"
-                       type="text"
-                       @click="handleUpdate(scope.$index, scope.row)">
-              编辑
-            </el-button>
-            <el-button size="mini"
-                       type="text"
-                       @click="handleDelete(scope.$index, scope.row)">删除
-            </el-button>
+            <div class="button-group">
+              <el-button 
+                size="mini"
+                type="info"
+                plain
+                icon="el-icon-connection"
+                @click="handleSelectRole(scope.$index, scope.row)">
+                角色
+              </el-button>
+              <el-button 
+                size="mini"
+                type="primary"
+                plain
+                icon="el-icon-edit"
+                @click="handleUpdate(scope.$index, scope.row)">
+                编辑
+              </el-button>
+              <el-button 
+                size="mini"
+                type="danger"
+                plain
+                icon="el-icon-delete"
+                @click="handleDelete(scope.$index, scope.row)">
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
+        
+        <template slot="empty">
+          <div class="empty-data">
+            <i class="el-icon-user-solid"></i>
+            <p>暂无用户数据</p>
+          </div>
+        </template>
       </el-table>
-    </div>
-    <div class="pagination-container">
-      <el-pagination
-        background
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        layout="total, sizes,prev, pager, next,jumper"
-        :current-page.sync="listQuery.pageNum"
-        :page-size="listQuery.pageSize"
-        :page-sizes="[10,15,20]"
-        :total="total">
-      </el-pagination>
-    </div>
+      
+      <div class="pagination-container">
+        <el-pagination
+          background
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+          :current-page.sync="listQuery.pageNum"
+          :page-size="listQuery.pageSize"
+          :page-sizes="[10, 15, 20, 30]"
+          :total="total">
+        </el-pagination>
+      </div>
+    </el-card>
+    
+    <!-- 用户编辑对话框 -->
     <el-dialog
-      :title="isEdit?'编辑用户':'添加用户'"
+      :title="isEdit ? '编辑用户' : '添加用户'"
       :visible.sync="dialogVisible"
-      width="40%">
-      <el-form :model="admin"
-               ref="adminForm"
-               label-width="150px" size="small">
-        <el-form-item label="帐号：">
-          <el-input v-model="admin.username" style="width: 250px"></el-input>
+      width="40%"
+      :close-on-click-modal="false">
+      <el-form 
+        :model="admin"
+        ref="adminForm"
+        label-width="100px" 
+        size="small"
+        status-icon>
+        <el-form-item label="帐号：" required>
+          <el-input 
+            v-model="admin.username" 
+            placeholder="请输入登录帐号"
+            :disabled="isEdit"
+            style="width: 300px">
+          </el-input>
         </el-form-item>
-        <el-form-item label="姓名：">
-          <el-input v-model="admin.nickName" style="width: 250px"></el-input>
+        <el-form-item label="姓名：" required>
+          <el-input 
+            v-model="admin.nickName" 
+            placeholder="请输入姓名"
+            style="width: 300px">
+          </el-input>
         </el-form-item>
         <el-form-item label="邮箱：">
-          <el-input v-model="admin.email" style="width: 250px"></el-input>
+          <el-input 
+            v-model="admin.email" 
+            placeholder="请输入邮箱地址"
+            style="width: 300px">
+          </el-input>
         </el-form-item>
-        <el-form-item label="密码：">
-          <el-input v-model="admin.password"  type="password" style="width: 250px"></el-input>
+        <el-form-item label="密码：" :required="!isEdit">
+          <el-input 
+            v-model="admin.password"  
+            type="password" 
+            placeholder="请输入密码"
+            style="width: 300px">
+          </el-input>
+          <div class="form-tip" v-if="isEdit">
+            <i class="el-icon-info"></i>
+            <span>不修改密码请保持为空</span>
+          </div>
         </el-form-item>
         <el-form-item label="备注：">
-          <el-input v-model="admin.note"
-                    type="textarea"
-                    :rows="5"
-                    style="width: 250px"></el-input>
+          <el-input 
+            v-model="admin.note"
+            type="textarea"
+            :rows="4"
+            placeholder="请输入备注信息"
+            style="width: 300px">
+          </el-input>
         </el-form-item>
         <el-form-item label="是否启用：">
-          <el-radio-group v-model="admin.status">
-            <el-radio :label="1">是</el-radio>
-            <el-radio :label="0">否</el-radio>
-          </el-radio-group>
+          <el-switch
+            v-model="admin.status"
+            :active-value="1"
+            :inactive-value="0"
+            active-color="#13ce66"
+            inactive-color="#ff4949"
+            active-text="启用"
+            inactive-text="禁用">
+          </el-switch>
         </el-form-item>
       </el-form>
-      <span slot="footer" class="dialog-footer">
+      <div slot="footer" class="dialog-footer">
         <el-button @click="dialogVisible = false" size="small">取 消</el-button>
         <el-button type="primary" @click="handleDialogConfirm()" size="small">确 定</el-button>
-      </span>
+      </div>
     </el-dialog>
+    
+    <!-- 角色分配对话框 -->
     <el-dialog
       title="分配角色"
       :visible.sync="allocDialogVisible"
       width="30%">
-      <el-select v-model="allocRoleIds" multiple placeholder="请选择" size="small" style="width: 80%">
-        <el-option
-          v-for="item in allRoleList"
-          :key="item.id"
-          :label="item.name"
-          :value="item.id">
-        </el-option>
-      </el-select>
-      <span slot="footer" class="dialog-footer">
+      <div class="role-select-container">
+        <div class="role-select-title">
+          <i class="el-icon-connection"></i>
+          <span>请选择角色</span>
+        </div>
+        <el-select 
+          v-model="allocRoleIds" 
+          multiple 
+          placeholder="请选择角色" 
+          size="small" 
+          style="width: 100%">
+          <el-option
+            v-for="item in allRoleList"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id">
+          </el-option>
+        </el-select>
+      </div>
+      <div slot="footer" class="dialog-footer">
         <el-button @click="allocDialogVisible = false" size="small">取 消</el-button>
         <el-button type="primary" @click="handleAllocDialogConfirm()" size="small">确 定</el-button>
-      </span>
+      </div>
     </el-dialog>
   </div>
 </template>
+
 <script>
   import {fetchList,createAdmin,updateAdmin,updateStatus,deleteAdmin,getRoleByAdmin,allocRole} from '@/api/login';
   import {fetchAllRoleList} from '@/api/role';
@@ -261,6 +406,7 @@
         this.dialogVisible = true;
         this.isEdit = true;
         this.admin = Object.assign({},row);
+        this.admin.password = ''; // 编辑模式下清空密码
       },
       handleDialogConfirm() {
         this.$confirm('是否要确认?', '提示', {
@@ -339,6 +485,173 @@
     }
   }
 </script>
-<style></style>
+
+<style scoped>
+  .app-container {
+    padding: 20px;
+    background-color: #f5f7fa;
+    min-height: calc(100vh - 84px);
+  }
+  
+  /* 筛选搜索卡片 */
+  .filter-container {
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  }
+  
+  .card-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+  }
+  
+  .card-title i {
+    margin-right: 5px;
+    color: #409EFF;
+  }
+  
+  .filter-content {
+    padding: 15px 0 0;
+  }
+  
+  .input-width {
+    width: 220px;
+  }
+  
+  /* 表格卡片 */
+  .table-card {
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+  }
+  
+  .card-tools {
+    float: right;
+  }
+  
+  .card-tools .el-button {
+    margin-left: 10px;
+  }
+  
+  /* 用户信息样式 */
+  .user-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .user-icon {
+    color: #409EFF;
+    margin-right: 5px;
+  }
+  
+  .user-name {
+    font-weight: 500;
+  }
+  
+  .id-number {
+    font-family: Consolas, Monaco, monospace;
+    font-weight: bold;
+    color: #606266;
+  }
+  
+  /* 时间信息样式 */
+  .time-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .time-icon {
+    margin-right: 5px;
+    color: #909399;
+  }
+  
+  /* 状态标签样式 */
+  .status-tag {
+    margin-left: 8px;
+  }
+  
+  /* 按钮组样式 */
+  .button-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+  
+  .button-group .el-button {
+    margin: 0 3px;
+    padding: 7px 10px;
+  }
+  
+  /* 空数据提示 */
+  .empty-data {
+    padding: 40px 0;
+    text-align: center;
+    color: #909399;
+  }
+  
+  .empty-data i {
+    font-size: 50px;
+    margin-bottom: 10px;
+  }
+  
+  .empty-data p {
+    margin: 0;
+    font-size: 14px;
+  }
+  
+  /* 分页样式 */
+  .pagination-container {
+    margin-top: 20px;
+    text-align: right;
+  }
+  
+  /* 表单提示 */
+  .form-tip {
+    margin-top: 5px;
+    color: #E6A23C;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .form-tip i {
+    margin-right: 5px;
+  }
+  
+  /* 角色选择 */
+  .role-select-container {
+    padding: 5px;
+  }
+  
+  .role-select-title {
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #303133;
+    display: flex;
+    align-items: center;
+  }
+  
+  .role-select-title i {
+    color: #409EFF;
+    margin-right: 5px;
+  }
+  
+  /* 响应式调整 */
+  @media screen and (max-width: 992px) {
+    .button-group {
+      flex-direction: column;
+    }
+    
+    .button-group .el-button {
+      margin: 3px 0;
+      width: 100%;
+    }
+  }
+</style>
 
 

@@ -1,27 +1,32 @@
-<template> 
+<template> 
   <div class="app-container">
-    <el-card class="filter-container" shadow="never">
-      <div>
-        <i class="el-icon-search"></i>
-        <span>筛选搜索</span>
-        <el-button
-          style="float:right"
-          type="primary"
-          @click="handleSearchList()"
-          size="small">
-          查询搜索
-        </el-button>
-        <el-button
-          style="float:right;margin-right: 15px"
-          @click="handleResetSearch()"
-          size="small">
-          重置
-        </el-button>
+    <!-- 筛选搜索区域 -->
+    <el-card class="filter-container" shadow="hover">
+      <div class="filter-header">
+        <div class="filter-title">
+          <i class="el-icon-search"></i>
+          <span>筛选搜索</span>
+        </div>
+        <div class="filter-buttons">
+          <el-button
+            type="primary"
+            @click="handleSearchList()"
+            size="small"
+            icon="el-icon-search">
+            查询搜索
+          </el-button>
+          <el-button
+            @click="handleResetSearch()"
+            size="small"
+            icon="el-icon-refresh">
+            重置
+          </el-button>
+        </div>
       </div>
-      <div style="margin-top: 15px">
+      <div class="filter-form">
         <el-form :inline="true" :model="listQuery" size="small" label-width="140px">
           <el-form-item label="商品名称：">
-            <el-input v-model="listQuery.productName" class="input-width" placeholder="商品名称"></el-input>
+            <el-input v-model="listQuery.productName" class="input-width" placeholder="商品名称" clearable></el-input>
           </el-form-item>
           <el-form-item label="推荐状态：">
             <el-select v-model="listQuery.recommendStatus" placeholder="全部" clearable class="input-width">
@@ -35,136 +40,229 @@
         </el-form>
       </div>
     </el-card>
-    <el-card class="operate-container" shadow="never">
-      <i class="el-icon-tickets"></i>
-      <span>数据列表</span>
-      <el-button size="mini" class="btn-add" @click="handleSelectProduct()">选择商品</el-button>
-    </el-card>
-    <div class="table-container">
+    
+    <!-- 操作和数据列表区域 -->
+    <el-card class="list-container" shadow="hover">
+      <div slot="header" class="clearfix card-header">
+        <span class="card-title">
+          <i class="el-icon-present"></i>
+          <span>新品推荐列表</span>
+        </span>
+        <div class="card-tools">
+          <el-tooltip content="刷新列表" placement="top">
+            <el-button 
+              size="small" 
+              icon="el-icon-refresh" 
+              type="text" 
+              @click="getList()">
+            </el-button>
+          </el-tooltip>
+          <el-button 
+            size="small" 
+            type="primary" 
+            icon="el-icon-plus" 
+            @click="handleSelectProduct()">
+            选择商品
+          </el-button>
+        </div>
+      </div>
+      
       <el-table ref="newProductTable"
                 :data="list"
                 style="width: 100%;"
                 @selection-change="handleSelectionChange"
-                v-loading="listLoading" border>
+                v-loading="listLoading" 
+                border
+                stripe
+                highlight-current-row
+                :header-cell-style="{background:'#f8f9fa',color:'#606266'}"
+                row-key="id">
         <el-table-column type="selection" width="60" align="center"></el-table-column>
-        <el-table-column label="编号" width="120" align="center">
-          <template slot-scope="scope">{{scope.row.id}}</template>
+        <el-table-column label="编号" width="100" align="center">
+          <template slot-scope="scope">
+            <span class="id-number">#{{scope.row.id}}</span>
+          </template>
         </el-table-column>
-        <el-table-column label="商品名称" align="center">
-          <template slot-scope="scope">{{scope.row.productName}}</template>
+        <el-table-column label="商品名称" min-width="200" align="center">
+          <template slot-scope="scope">
+            <span class="product-name">{{scope.row.productName}}</span>
+          </template>
         </el-table-column>
-        <el-table-column label="是否推荐" width="200" align="center">
+        <el-table-column label="推荐状态" width="140" align="center">
           <template slot-scope="scope">
             <el-switch
               @change="handleRecommendStatusStatusChange(scope.$index, scope.row)"
               :active-value="1"
               :inactive-value="0"
-              v-model="scope.row.recommendStatus">
+              v-model="scope.row.recommendStatus"
+              active-color="#13ce66"
+              inactive-color="#ff4949">
             </el-switch>
+            <span class="switch-status" :class="scope.row.recommendStatus === 1 ? 'active' : 'inactive'">
+              {{ scope.row.recommendStatus === 1 ? '已推荐' : '未推荐' }}
+            </span>
           </template>
         </el-table-column>
-        <el-table-column label="排序" width="160" align="center">
-          <template slot-scope="scope">{{scope.row.sort}}</template>
-        </el-table-column>
-        <el-table-column label="状态" width="160" align="center">
-          <template slot-scope="scope">{{scope.row.recommendStatus | formatRecommendStatus}}</template>
+        <el-table-column label="排序值" width="120" align="center">
+          <template slot-scope="scope">
+            <span class="sort-number">{{scope.row.sort}}</span>
+          </template>
         </el-table-column>
         <el-table-column label="操作" width="180" align="center">
           <template slot-scope="scope">
-            <el-button size="mini"
-                       type="text"
-                       @click="handleEditSort(scope.$index, scope.row)">设置排序
-            </el-button>
-            <el-button size="mini"
-                       type="text"
-                       @click="handleDelete(scope.$index, scope.row)">删除
-            </el-button>
+            <div class="operation-container">
+              <el-button size="mini"
+                       type="primary"
+                       plain
+                       icon="el-icon-sort"
+                       @click="handleEditSort(scope.$index, scope.row)">
+                设置排序
+              </el-button>
+              <el-button size="mini"
+                       type="danger"
+                       plain
+                       icon="el-icon-delete"
+                       @click="handleDelete(scope.$index, scope.row)">
+                删除
+              </el-button>
+            </div>
+          </template>
+        </el-table-column>
+        
+        <template slot="empty">
+          <div class="empty-data">
+            <i class="el-icon-present"></i>
+            <p>暂无新品推荐数据</p>
+          </div>
+        </template>
+      </el-table>
+      
+      <!-- 批量操作区域 -->
+      <div class="batch-operate-container">
+        <el-select
+          size="small"
+          v-model="operateType" 
+          placeholder="批量操作"
+          class="batch-select">
+          <el-option
+            v-for="item in operates"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value">
+          </el-option>
+        </el-select>
+        <el-button
+          class="batch-button"
+          @click="handleBatchOperate()"
+          type="primary"
+          size="small"
+          icon="el-icon-check">
+          确定
+        </el-button>
+      </div>
+      
+      <!-- 分页区域 -->
+      <div class="pagination-container">
+        <el-pagination
+          background
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+          :page-size="listQuery.pageSize"
+          :page-sizes="[5,10,15]"
+          :current-page.sync="listQuery.pageNum"
+          :total="total">
+        </el-pagination>
+      </div>
+    </el-card>
+    
+    <!-- 选择商品对话框 -->
+    <el-dialog 
+      title="选择商品" 
+      :visible.sync="selectDialogVisible" 
+      width="60%" 
+      :close-on-click-modal="false"
+      class="select-dialog">
+      <div class="dialog-search-container">
+        <el-input v-model="dialogData.listQuery.keyword"
+                  size="small"
+                  placeholder="请输入商品名称或货号搜索"
+                  clearable
+                  prefix-icon="el-icon-search">
+          <el-button slot="append" icon="el-icon-search" @click="handleSelectSearch()"></el-button>
+        </el-input>
+      </div>
+      <el-table :data="dialogData.list"
+                @selection-change="handleDialogSelectionChange" 
+                border
+                stripe
+                :header-cell-style="{background:'#f8f9fa',color:'#606266'}"
+                max-height="400">
+        <el-table-column type="selection" width="60" align="center"></el-table-column>
+        <el-table-column label="商品名称" min-width="200" align="center">
+          <template slot-scope="scope">
+            <span class="product-name">{{scope.row.name}}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="货号" width="160" align="center">
+          <template slot-scope="scope">
+            <el-tag size="medium" effect="plain" type="info">NO.{{scope.row.productSn}}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="价格" width="120" align="center">
+          <template slot-scope="scope">
+            <div class="price">
+              <span class="price-symbol">￥</span>
+              <span class="price-value">{{scope.row.price}}</span>
+            </div>
           </template>
         </el-table-column>
       </el-table>
-    </div>
-    <div class="batch-operate-container">
-      <el-select
-        size="small"
-        v-model="operateType" placeholder="批量操作">
-        <el-option
-          v-for="item in operates"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value">
-        </el-option>
-      </el-select>
-      <el-button
-        style="margin-left: 20px"
-        class="search-button"
-        @click="handleBatchOperate()"
-        type="primary"
-        size="small">
-        确定
-      </el-button>
-    </div>
-    <div class="pagination-container">
-      <el-pagination
-        background
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        layout="total, sizes,prev, pager, next,jumper"
-        :page-size="listQuery.pageSize"
-        :page-sizes="[5,10,15]"
-        :current-page.sync="listQuery.pageNum"
-        :total="total">
-      </el-pagination>
-    </div>
-    <el-dialog title="选择商品" :visible.sync="selectDialogVisible" width="50%">
-      <el-input v-model="dialogData.listQuery.keyword"
-                style="width: 250px;margin-bottom: 20px"
-                size="small"
-                placeholder="商品名称搜索">
-        <el-button slot="append" icon="el-icon-search" @click="handleSelectSearch()"></el-button>
-      </el-input>
-      <el-table :data="dialogData.list"
-                @selection-change="handleDialogSelectionChange" border>
-        <el-table-column type="selection" width="60" align="center"></el-table-column>
-        <el-table-column label="商品名称" align="center">
-          <template slot-scope="scope">{{scope.row.name}}</template>
-        </el-table-column>
-        <el-table-column label="货号" width="160" align="center">
-          <template slot-scope="scope">NO.{{scope.row.productSn}}</template>
-        </el-table-column>
-        <el-table-column label="价格" width="120" align="center">
-          <template slot-scope="scope">￥{{scope.row.price}}</template>
-        </el-table-column>
-      </el-table>
-      <div class="pagination-container">
+      <div class="pagination-container dialog-pagination">
         <el-pagination
           background
           @size-change="handleDialogSizeChange"
           @current-change="handleDialogCurrentChange"
-          layout="prev, pager, next"
+          layout="total, prev, pager, next"
           :current-page.sync="dialogData.listQuery.pageNum"
           :page-size="dialogData.listQuery.pageSize"
           :page-sizes="[5,10,15]"
           :total="dialogData.total">
         </el-pagination>
       </div>
-      <div style="clear: both;"></div>
-      <div slot="footer">
-        <el-button  size="small" @click="selectDialogVisible = false">取 消</el-button>
-        <el-button  size="small" type="primary" @click="handleSelectDialogConfirm()">确 定</el-button>
+      <div slot="footer" class="dialog-footer">
+        <el-button size="small" @click="selectDialogVisible = false" icon="el-icon-close">取 消</el-button>
+        <el-button size="small" type="primary" @click="handleSelectDialogConfirm()" icon="el-icon-check">确 定</el-button>
       </div>
     </el-dialog>
+    
+    <!-- 设置排序对话框 -->
     <el-dialog title="设置排序"
                :visible.sync="sortDialogVisible"
-               width="40%">
+               width="40%"
+               :close-on-click-modal="false"
+               center
+               class="sort-dialog">
+      <div class="sort-dialog-icon">
+        <i class="el-icon-sort"></i>
+      </div>
       <el-form :model="sortDialogData"
-               label-width="150px">
-        <el-form-item label="排序：">
-          <el-input v-model="sortDialogData.sort" style="width: 200px"></el-input>
+               label-width="120px">
+        <el-form-item label="排序值：">
+          <el-input-number 
+            v-model="sortDialogData.sort" 
+            :min="0" 
+            :max="999" 
+            controls-position="right"
+            placeholder="请输入排序值"
+            class="sort-input">
+          </el-input-number>
+          <div class="form-tip">数值越小排序越靠前，推荐使用10的倍数</div>
         </el-form-item>
       </el-form>
-      <span slot="footer">
-        <el-button @click="sortDialogVisible = false" size="small">取 消</el-button>
-        <el-button type="primary" @click="handleUpdateSort" size="small">确 定</el-button>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="sortDialogVisible = false" size="small" icon="el-icon-close">取 消</el-button>
+        <el-button type="primary" @click="handleUpdateSort" size="small" icon="el-icon-check">确 定</el-button>
       </span>
     </el-dialog>
   </div>
@@ -427,4 +525,233 @@
     }
   }
 </script>
-<style></style>
+<style scoped>
+  .app-container {
+    padding: 20px;
+    background-color: #f5f7fa;
+    min-height: calc(100vh - 84px);
+  }
+  
+  /* 卡片通用样式 */
+  .filter-container, .list-container {
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  }
+  
+  /* 筛选区样式 */
+  .filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  
+  .filter-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+    display: flex;
+    align-items: center;
+  }
+  
+  .filter-title i {
+    margin-right: 8px;
+    color: #409EFF;
+    font-size: 18px;
+  }
+  
+  .filter-buttons .el-button {
+    margin-left: 10px;
+  }
+  
+  .filter-form {
+    margin-top: 15px;
+  }
+  
+  .input-width {
+    width: 220px;
+  }
+  
+  /* 表格卡片样式 */
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .card-title {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+    display: flex;
+    align-items: center;
+  }
+  
+  .card-title i {
+    margin-right: 8px;
+    color: #67C23A; /* Changed icon color to green */
+    font-size: 18px;
+  }
+  
+  .card-tools {
+    display: flex;
+    align-items: center;
+  }
+  
+  .card-tools .el-button {
+    margin-left: 10px;
+  }
+  
+  /* 表格样式 */
+  .id-number {
+    font-family: Consolas, Monaco, monospace;
+    font-weight: bold;
+    color: #606266;
+    background-color: #f4f4f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  
+  .product-name {
+    font-weight: 500;
+    color: #303133;
+  }
+  
+  .sort-number {
+    background: #f4f4f5;
+    color: #909399;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+  }
+  
+  /* 开关状态样式 */
+  .switch-status {
+    font-size: 12px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+  
+  .switch-status.active {
+    color: #13ce66;
+  }
+  
+  .switch-status.inactive {
+    color: #ff4949;
+  }
+  
+  /* 操作按钮样式 */
+  .operation-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .operation-container .el-button {
+    margin: 0;
+  }
+  
+  /* 空数据状态 */
+  .empty-data {
+    padding: 40px 0;
+    text-align: center;
+    color: #909399;
+  }
+  
+  .empty-data i {
+    font-size: 50px;
+    margin-bottom: 10px;
+    color: #c0c4cc;
+  }
+  
+  .empty-data p {
+    margin: 0;
+    font-size: 14px;
+  }
+  
+  /* 批量操作区域 */
+  .batch-operate-container {
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #EBEEF5;
+  }
+  
+  .batch-select {
+    width: 160px;
+  }
+  
+  .batch-button {
+    margin-left: 15px;
+  }
+  
+  /* 分页样式 */
+  .pagination-container {
+    margin-top: 20px;
+    padding-bottom: 10px;
+    text-align: right;
+  }
+  
+  /* 选择商品对话框 */
+  .dialog-search-container {
+    margin-bottom: 20px;
+    width: 350px; /* Increased width */
+  }
+  
+  .dialog-pagination {
+    margin-top: 15px;
+  }
+  
+  .price {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .price-symbol {
+    color: #F56C6C; /* Changed symbol color */
+    margin-right: 2px;
+    font-size: 12px;
+  }
+  
+  .price-value {
+    color: #F56C6C; /* Changed value color */
+    font-weight: bold;
+  }
+  
+  /* 排序对话框 */
+  .sort-dialog .el-dialog__body {
+    padding-top: 10px;
+  }
+  
+  .sort-dialog-icon {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .sort-dialog-icon i {
+    font-size: 36px;
+    color: #409EFF;
+    background-color: #ecf5ff;
+    padding: 15px;
+    border-radius: 50%;
+  }
+  
+  .sort-input {
+    width: 180px;
+  }
+  
+  .form-tip {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 5px;
+  }
+  
+  .dialog-footer {
+    text-align: right;
+  }
+</style>
