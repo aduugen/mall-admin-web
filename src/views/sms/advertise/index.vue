@@ -106,15 +106,12 @@
         </el-table-column>
         <el-table-column label="广告图片" width="140" align="center">
           <template slot-scope="scope">
-            <el-image 
-              style="width: 100px; height: 60px" 
-              :src="scope.row.pic"
-              fit="contain" 
-              :preview-src-list="[scope.row.pic]">
-               <div slot="error" class="image-slot">
+            <div class="ad-image-container" @click="handleImageClick(scope.row)">
+              <img v-if="scope.row.pic" :src="scope.row.pic" class="ad-image">
+              <div v-else class="image-placeholder">
                 <i class="el-icon-picture-outline"></i>
               </div>
-            </el-image>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="时间范围" width="260" align="center">
@@ -217,9 +214,24 @@
         </el-pagination>
       </div>
     </el-card>
+
+    <!-- 图片预览对话框 -->
+    <el-dialog 
+      :visible.sync="imagePreviewVisible" 
+      width="50%" 
+      :show-close="false"
+      custom-class="image-preview-dialog">
+      <div class="preview-container">
+        <img :src="previewImage" class="preview-image">
+        <div class="preview-close" @click="imagePreviewVisible = false">
+          <i class="el-icon-close"></i>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 <script>
+  // Import necessary components
   import {fetchList,updateStatus,deleteHomeAdvertise} from '@/api/homeAdvertise';
   import {formatDate} from '@/utils/date';
   const defaultListQuery = {
@@ -255,7 +267,9 @@
             value: 0
           }
         ],
-        operateType: null
+        operateType: null,
+        imagePreviewVisible: false,
+        previewImage: ''
       }
     },
     created() {
@@ -375,7 +389,13 @@
             });
           });
         })
-      }
+      },
+      handleImageClick(row) {
+        if (row.pic) {
+          this.previewImage = row.pic;
+          this.imagePreviewVisible = true;
+        }
+      },
     }
   }
 </script>
@@ -473,15 +493,36 @@
     color: #303133;
   }
 
-  .el-image__error, .image-slot {
-    background: #f5f7fa;
-    color: #c0c4cc;
-    font-size: 30px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .ad-image-container {
+    width: 100px;
+    height: 60px;
+    margin: 0 auto;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 4px;
+    background-color: #f5f7fa;
+    transition: all 0.3s;
+  }
+
+  .ad-image-container:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .ad-image {
     width: 100%;
     height: 100%;
+    object-fit: contain;
+  }
+
+  .image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #909399;
+    font-size: 20px;
   }
 
   .time-range p {
@@ -574,7 +615,47 @@
     text-align: right;
   }
 
-  /* Removed original .input-width style as it's handled by a class now */
+  /* 图片预览对话框样式 */
+  .image-preview-dialog {
+    margin-top: 8vh !important;
+  }
+
+  .preview-container {
+    position: relative;
+    width: 100%;
+    height: 60vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f5f7fa;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+
+  .preview-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    color: #fff;
+    font-size: 18px;
+    transition: all 0.3s;
+  }
+
+  .preview-close:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
 </style>
 
 
