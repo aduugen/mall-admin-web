@@ -12,11 +12,10 @@
         :data="productList">
         <el-table-column label="商品图片" width="120" align="center">
           <template slot-scope="scope">
-            <div class="image-wrapper">
+            <div class="image-wrapper" @mouseenter="handleImageHover(scope.row.productPic)" @mouseleave="handleImageLeave">
               <img 
                 style="width: 80px; height: 80px; object-fit: cover; border-radius: 4px; cursor: pointer;" 
                 :src="scope.row.productPic"
-                @click="previewSingleImage(scope.row.productPic)"
                 alt="商品图片"
               >
               <div v-if="!scope.row.productPic" class="image-placeholder">
@@ -67,13 +66,18 @@
         <el-table-column label="凭证图片" width="100" align="center">
           <template slot-scope="scope">
             <div v-if="getProofPicsArray(scope.row.proofPics).length > 0">
-              <img 
+              <div 
                 v-for="(picUrl, index) in getProofPicsArray(scope.row.proofPics)"
                 :key="index"
-                :src="picUrl"
-                style="width: 60px; height: 60px; margin: 2px; border-radius: 4px; object-fit: cover; cursor: pointer;" 
-                @click="previewSingleImage(picUrl)" 
-              />
+                class="proof-image-wrapper"
+                @mouseenter="handleImageHover(picUrl)"
+                @mouseleave="handleImageLeave"
+              >
+                <img 
+                  :src="picUrl"
+                  style="width: 60px; height: 60px; margin: 2px; border-radius: 4px; object-fit: cover; cursor: pointer;" 
+                />
+              </div>
               <div v-if="getProofPicsArray(scope.row.proofPics).length > 1" class="font-extra-small color-info">
                 (共 {{ getProofPicsArray(scope.row.proofPics).length }} 张)
               </div>
@@ -342,6 +346,18 @@
         
       </div>
     </el-card>
+
+    <!-- 图片预览遮罩 -->
+    <div class="image-preview-mask" 
+         v-show="previewVisible" 
+         @mouseenter="handleMaskEnter" 
+         @mouseleave="handleMaskLeave"
+         @click="handleMaskClick"
+         @contextmenu.prevent="handleMaskClick">
+      <div class="preview-container">
+        <img :src="previewImage" class="preview-image">
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -388,7 +404,11 @@
         orderReturnApply: Object.assign({}, defaultOrderReturnApply),
         productList: null,
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
-        companyAddressList: []
+        companyAddressList: [],
+        previewVisible: false,
+        previewImage: '',
+        previewTimer: null,
+        isMouseOnMask: false
       }
     },
     created() {
@@ -488,11 +508,46 @@
         }
         return picsStr.split(',').filter(pic => pic && pic.trim() !== '');
       },
-      previewSingleImage(url) {
+      handleImageHover(url) {
+        if (this.previewTimer) {
+          clearTimeout(this.previewTimer);
+          this.previewTimer = null;
+        }
         if (url) {
-          window.open(url, '_blank');
-        } else {
-          this.$message.warning('无效的图片链接');
+          this.previewImage = url;
+          this.previewVisible = true;
+        }
+      },
+      handleImageLeave() {
+        this.previewTimer = setTimeout(() => {
+          if (!this.isMouseOnMask) {
+            this.previewVisible = false;
+            this.previewImage = '';
+          }
+        }, 100);
+      },
+      handleMaskEnter() {
+        this.isMouseOnMask = true;
+        if (this.previewTimer) {
+          clearTimeout(this.previewTimer);
+          this.previewTimer = null;
+        }
+      },
+      handleMaskLeave() {
+        this.isMouseOnMask = false;
+        this.previewVisible = false;
+        this.previewImage = '';
+      },
+      handleMaskClick(event) {
+        // 阻止事件冒泡
+        event.stopPropagation();
+        // 关闭预览
+        this.previewVisible = false;
+        this.previewImage = '';
+        this.isMouseOnMask = false;
+        if (this.previewTimer) {
+          clearTimeout(this.previewTimer);
+          this.previewTimer = null;
         }
       },
       handleViewOrder() {
@@ -904,6 +959,46 @@
   .product-sn {
     color: #909399;
     font-size: 12px;
+  }
+
+  /* 图片预览相关样式 */
+  .image-preview-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .preview-container {
+    max-width: 80%;
+    max-height: 80%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+  }
+
+  .proof-image-wrapper {
+    display: inline-block;
+    position: relative;
+  }
+
+  .proof-image-wrapper:hover {
+    transform: scale(1.05);
+    transition: transform 0.3s;
   }
 </style>
 
