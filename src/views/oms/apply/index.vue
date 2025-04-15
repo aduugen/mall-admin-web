@@ -1,135 +1,188 @@
-<template> 
+<template> 
   <div class="app-container">
-    <el-card class="filter-container" shadow="never">
-      <div>
-        <i class="el-icon-search"></i>
-        <span>筛选搜索</span>
-        <el-button
-          style="float:right"
-          type="primary"
-          @click="handleSearchList()"
-          size="small">
-          查询搜索
-        </el-button>
-        <el-button
-          style="float:right;margin-right: 15px"
-          @click="handleResetSearch()"
-          size="small">
-          重置
-        </el-button>
+    <!-- 筛选搜索区域 -->
+    <div class="card-section">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="el-icon-search"></i>
+          <span>筛选搜索</span>
+        </div>
+        <div class="search-buttons">
+          <el-button
+            type="primary"
+            @click="handleSearchList()"
+            size="small"
+            icon="el-icon-search">
+            查询搜索
+          </el-button>
+          <el-button
+            @click="handleResetSearch()"
+            size="small"
+            icon="el-icon-refresh">
+            重置
+          </el-button>
+        </div>
       </div>
-      <div style="margin-top: 15px">
-        <el-form :inline="true" :model="listQuery" size="small" label-width="140px">
-          <el-form-item label="输入搜索：">
-            <el-input v-model="listQuery.id" class="input-width" placeholder="服务单号"></el-input>
-          </el-form-item>
-          <el-form-item label="处理状态：">
-            <el-select v-model="listQuery.status" placeholder="全部" clearable class="input-width">
-              <el-option v-for="item in statusOptions"
-                         :key="item.value"
-                         :label="item.label"
-                         :value="item.value">
-              </el-option>
-            </el-select>
-          </el-form-item>
-          <el-form-item label="申请时间：">
-            <el-date-picker
-              class="input-width"
-              v-model="listQuery.createTime"
-              value-format="yyyy-MM-dd"
-              type="date"
-              placeholder="请选择时间">
-            </el-date-picker>
-          </el-form-item>
-          <el-form-item label="操作人员：">
-            <el-input v-model="listQuery.handleMan" class="input-width" placeholder="全部"></el-input>
-          </el-form-item>
-          <el-form-item label="处理时间：">
-            <el-date-picker
-              class="input-width"
-              v-model="listQuery.handleTime"
-              value-format="yyyy-MM-dd"
-              type="date"
-              placeholder="请选择时间">
-            </el-date-picker>
-          </el-form-item>
+      <div class="card-content">
+        <el-form :inline="true" :model="listQuery" size="small" label-width="100px">
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="服务单号：">
+                <el-input v-model="listQuery.id" placeholder="请输入服务单号" clearable></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="处理状态：">
+                <el-select v-model="listQuery.status" placeholder="全部" clearable>
+                  <el-option v-for="item in statusOptions"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="申请时间：">
+                <el-date-picker
+                  v-model="listQuery.createTime"
+                  value-format="yyyy-MM-dd"
+                  type="date"
+                  placeholder="请选择时间">
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="8">
+              <el-form-item label="操作人员：">
+                <el-input v-model="listQuery.handleMan" placeholder="请输入操作人员" clearable></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="8">
+              <el-form-item label="处理时间：">
+                <el-date-picker
+                  v-model="listQuery.handleTime"
+                  value-format="yyyy-MM-dd"
+                  type="date"
+                  placeholder="请选择时间">
+                </el-date-picker>
+              </el-form-item>
+            </el-col>
+          </el-row>
         </el-form>
       </div>
-    </el-card>
-    <el-card class="operate-container" shadow="never">
-      <i class="el-icon-tickets"></i>
-      <span>数据列表</span>
-    </el-card>
-    <div class="table-container">
-      <el-table ref="returnApplyTable"
-                :data="list"
-                style="width: 100%;"
-                @selection-change="handleSelectionChange"
-                v-loading="listLoading" border>
-        <el-table-column type="selection" width="60" align="center"></el-table-column>
-        <el-table-column label="售后单号" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.id}}</template>
-        </el-table-column>
-        <el-table-column label="申请时间" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.createTime | formatTime}}</template>
-        </el-table-column>
-        <el-table-column label="用户信息" width="180" align="center">
-          <template slot-scope="scope">
-            <div>
-              <div>用户ID：{{scope.row.memberId || '未知用户'}}</div>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="申请状态" width="140" align="center">
-          <template slot-scope="scope">{{ scope.row.status | formatStatus }}</template>
-        </el-table-column>
-        <el-table-column label="处理时间" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.handleTime | formatTime}}</template>
-        </el-table-column>
-        <el-table-column label="处理人" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.handleMan || '未处理'}}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="180" align="center">
-          <template slot-scope="scope">
-            <el-button
-            size="mini"
+    </div>
+    
+    <!-- 数据列表区域 -->
+    <div class="card-section">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="el-icon-tickets"></i>
+          <span>数据列表</span>
+        </div>
+        <div class="header-right">
+          <el-select
+            size="small"
+            v-model="operateType" 
+            placeholder="批量操作"
+            style="margin-right: 10px">
+            <el-option
+              v-for="item in operateOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value">
+            </el-option>
+          </el-select>
+          <el-button
+            @click="handleBatchOperate()"
             type="primary"
-            @click="handleViewDetail(scope.$index, scope.row)">查看详情</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </div>
-    <div class="batch-operate-container">
-      <el-select
-        size="small"
-        v-model="operateType" placeholder="批量操作">
-        <el-option
-          v-for="item in operateOptions"
-          :key="item.value"
-          :label="item.label"
-          :value="item.value">
-        </el-option>
-      </el-select>
-      <el-button
-        style="margin-left: 20px"
-        class="search-button"
-        @click="handleBatchOperate()"
-        type="primary"
-        size="small">
-        确定
-      </el-button>
-    </div>
-    <div class="pagination-container">
-      <el-pagination
-        background
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        layout="total, sizes,prev, pager, next,jumper"
-        :current-page.sync="listQuery.pageNum"
-        :page-size="listQuery.pageSize"
-        :page-sizes="[5,10,15]"
-        :total="total">
-      </el-pagination>
+            size="small"
+            icon="el-icon-check">
+            确定
+          </el-button>
+        </div>
+      </div>
+      
+      <!-- 数据表格 -->
+      <div class="card-content">
+        <el-table 
+          ref="returnApplyTable"
+          :data="list"
+          style="width: 100%;"
+          @selection-change="handleSelectionChange"
+          v-loading="listLoading" 
+          border
+          stripe
+          highlight-current-row
+          class="custom-table">
+          <el-table-column type="selection" width="60" align="center"></el-table-column>
+          <el-table-column label="售后单号" min-width="120" align="center">
+            <template slot-scope="scope">
+              <span class="order-id">{{scope.row.id}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="申请时间" min-width="160" align="center">
+            <template slot-scope="scope">
+              <span class="apply-time">{{scope.row.createTime | formatTime}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="用户信息" min-width="150" align="center">
+            <template slot-scope="scope">
+              <div class="user-info">
+                <p><span class="label">用户ID：</span>{{scope.row.memberId || '未知用户'}}</p>
+                <p v-if="scope.row.memberNickname"><span class="label">昵称：</span>{{scope.row.memberNickname}}</p>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="退款金额" min-width="120" align="center">
+            <template slot-scope="scope">
+              <span class="refund-amount">￥{{calcTotalAmount(scope.row)}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="申请状态" min-width="120" align="center">
+            <template slot-scope="scope">
+              <el-tag :type="getStatusTagType(scope.row.status)">{{ scope.row.status | formatStatus }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理时间" min-width="160" align="center">
+            <template slot-scope="scope">
+              <span class="handle-time">{{scope.row.handleTime | formatTime}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="处理人" min-width="120" align="center">
+            <template slot-scope="scope">
+              <span class="handle-man">{{scope.row.handleMan || '未处理'}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" min-width="150" align="center" fixed="right">
+            <template slot-scope="scope">
+              <el-button
+              size="mini"
+              type="primary"
+              icon="el-icon-view"
+              @click="handleViewDetail(scope.$index, scope.row)"
+              class="action-button">
+              查看详情
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+      
+      <!-- 分页 -->
+      <div class="pagination-card">
+        <el-pagination
+          background
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          layout="total, sizes, prev, pager, next, jumper"
+          :current-page.sync="listQuery.pageNum"
+          :page-size="listQuery.pageSize"
+          :page-sizes="[5,10,15,20]"
+          :total="total">
+        </el-pagination>
+      </div>
     </div>
   </div>
 </template>
@@ -212,6 +265,15 @@
       }
     },
     methods:{
+      getStatusTagType(status) {
+        switch(status) {
+          case 0: return 'warning';
+          case 1: return 'primary';
+          case 2: return 'success';
+          case 3: return 'danger';
+          default: return 'info';
+        }
+      },
       handleSelectionChange(val){
         this.multipleSelection = val;
       },
@@ -307,33 +369,137 @@
   }
 </script>
 <style scoped>
-  .input-width {
-    width: 203px;
+  /* 整体容器样式 */
+  .app-container {
+    padding: 20px;
+    background-color: #f5f7fa;
   }
   
-  .price-label, .quantity-label {
-    color: #666;
+  /* 卡片风格样式 */
+  .card-section {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+    overflow: hidden;
+    transition: all 0.3s;
   }
   
-  .price-value {
-    color: #f56c6c;
-    font-weight: bold;
+  .card-section:hover {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
   
-  .quantity-value {
-    font-weight: bold;
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-bottom: 1px solid #f0f2f5;
+    background-color: #fafbfc;
   }
   
-  .original-price {
-    color: #999;
-    font-size: 12px;
-    text-decoration: line-through;
-    margin-left: 5px;
+  .card-title {
+    display: flex;
+    align-items: center;
   }
   
+  .card-title i {
+    color: #409EFF;
+    font-size: 18px;
+    margin-right: 8px;
+  }
+  
+  .card-title span {
+    font-size: 16px;
+    font-weight: 500;
+    color: #303133;
+  }
+  
+  .card-content {
+    padding: 20px;
+  }
+  
+  /* 搜索区域样式 */
+  .search-buttons {
+    display: flex;
+    gap: 10px;
+  }
+  
+  /* 表格样式 */
+  .custom-table {
+    margin-top: 10px;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  /* 数据样式 */
+  .order-id {
+    font-weight: 500;
+    color: #409EFF;
+    transition: color 0.3s;
+  }
+  
+  .order-id:hover {
+    color: #66b1ff;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  
+  .user-info p {
+    margin: 5px 0;
+    line-height: 1.5;
+  }
+  
+  .user-info .label {
+    color: #909399;
+    margin-right: 5px;
+  }
+  
+  .apply-time, .handle-time {
+    color: #606266;
+  }
+  
+  .handle-man {
+    color: #606266;
+    display: inline-block;
+    padding: 2px 0;
+  }
+  
+  /* 分页样式 */
+  .pagination-card {
+    text-align: right;
+    padding: 15px 20px;
+    border-top: 1px solid #f0f2f5;
+    background-color: #fafbfc;
+  }
+  
+  /* 价格样式 */
   .refund-amount {
     color: #f56c6c;
     font-weight: bold;
+    font-size: 14px;
+  }
+  
+  /* 按钮样式 */
+  .action-button {
+    transition: all 0.3s;
+  }
+  
+  .action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .header-right {
+    display: flex;
+    align-items: center;
+  }
+  
+  /* 适配性调整 */
+  @media screen and (max-width: 1200px) {
+    .el-form-item {
+      margin-bottom: 18px;
+    }
   }
 </style>
 

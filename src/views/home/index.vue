@@ -2,32 +2,42 @@
   <div class="app-container">
     <div class="un-handle-layout">
       <div class="layout-title">今日看板</div>
-      <div class="un-handle-content">
+      <div class="un-handle-content today-data">
         <el-row :gutter="20">
           <el-col :span="4">
-            <img :src="img_home_order" class="total-icon">
-            <div class="total-title">订单数</div>
-            <div class="total-value">{{ todayOrdersCount }}</div>
+            <div class="un-handle-item">
+              <img :src="img_home_order" class="total-icon">
+              <div class="total-title">订单数</div>
+              <div class="total-value">{{ todayOrdersCount }}</div>
+            </div>
           </el-col>
           <el-col :span="4">
-            <img :src="img_home_today_amount" class="total-icon">
-            <div class="total-title">销售额</div>
-            <div class="total-value">￥{{ todaySalesAmount }}</div>
+            <div class="un-handle-item">
+              <img :src="img_home_today_amount" class="total-icon">
+              <div class="total-title">销售额</div>
+              <div class="total-value">￥{{ todaySalesAmount }}</div>
+            </div>
           </el-col>
           <el-col :span="4">
-            <img :src="today_new_member_icon" class="total-icon">
-            <div class="total-title">新增会员</div>
-            <div class="total-value">{{ todayNewMemberCount }}</div>
+            <div class="un-handle-item">
+              <img :src="today_new_member_icon" class="total-icon">
+              <div class="total-title">新增会员</div>
+              <div class="total-value">{{ todayNewMemberCount }}</div>
+            </div>
           </el-col>
           <el-col :span="4">
-            <img :src="today_visited_icon" class="total-icon">
-            <div class="total-title">访客数</div>
-            <div class="total-value">{{ visitorStats ? visitorStats.totalCount : 0 }}</div>
+            <div class="un-handle-item">
+              <img :src="today_visited_icon" class="total-icon">
+              <div class="total-title">访客数</div>
+              <div class="total-value">{{ visitorStats ? visitorStats.totalCount : 0 }}</div>
+            </div>
           </el-col>
           <el-col :span="4">
-            <img :src="online_visitor_icon" class="total-icon">
-            <div class="total-title">在线访客数(30分钟内)</div>
-            <div class="total-value">{{ visitorStats ? visitorStats.onlineCount : 0 }}</div>
+            <div class="un-handle-item">
+              <img :src="online_visitor_icon" class="total-icon">
+              <div class="total-title">在线访客数</div>
+              <div class="total-value">{{ visitorStats ? visitorStats.onlineCount : 0 }}</div>
+            </div>
           </el-col>
         </el-row>
       </div>
@@ -71,8 +81,6 @@
               <div class="total-value">{{ orderStatusStatistic ? orderStatusStatistic.invalid_count : 0 }}</div>
             </div>
           </el-col>
-        </el-row>
-        <el-row :gutter="20">
         </el-row>
         <el-row :gutter="20">
           <el-col :span="4">
@@ -157,9 +165,8 @@
     </div>
     <div class="un-handle-layout">
       <div class="layout-title">运营统计曲线</div>
-      <el-row>
+      <div class="date-picker-container">
         <el-date-picker
-          style="float: left;z-index: 1"
           size="small"
           v-model="orderCountDate"
           type="daterange"
@@ -171,21 +178,33 @@
           @change="handleDateChange"
           :picker-options="pickerOptions">
         </el-date-picker>
-      </el-row>
-      <el-row>
-        <el-col :span="20">
-          <div style="padding: 20px;border-left:1px solid #DCDFE6">
-            <div>
-              <ve-line
-                :data="chartData"
-                :loading="loading"
-                :data-empty="dataEmpty"
-                :settings="chartSettings"
-                :extend="chartExtend"></ve-line>
+      </div>
+      <div class="un-handle-content">
+        <el-row>
+          <el-col :span="24">
+            <div v-if="chartData && chartData.rows">
+              <div v-if="loading" class="chart-loading">
+                <div class="loading-spinner">
+                  <i class="el-icon-loading"></i>
+                  <p>数据加载中...</p>
+                </div>
+              </div>
+              <div v-else-if="dataEmpty" class="chart-empty">
+                <i class="el-icon-document"></i>
+                <p>暂无统计数据</p>
+              </div>
+              <div v-else>
+                <ve-line
+                  :data="chartData"
+                  :loading="loading"
+                  :settings="chartSettings"
+                  :extend="chartExtend"
+                  height="400px"></ve-line>
+              </div>
             </div>
-          </div>
-        </el-col>
-      </el-row>
+          </el-col>
+        </el-row>
+      </div>
     </div>
   </div>
 </template>
@@ -227,51 +246,30 @@
           shortcuts: [{
             text: '最近一周',
             onClick(picker) {
-              let start = new Date(2018,10,1);
-              const end = new Date(start.getTime() + 1000 * 60 * 60 * 24 * 7);
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
               picker.$emit('pick', [start, end]);
             }
           }, {
             text: '最近一月',
             onClick(picker) {
-              let start = new Date(2018,10,1);
-              const end = new Date(start.getTime() + 1000 * 60 * 60 * 24 * 30);
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
               picker.$emit('pick', [start, end]);
             }
           }, {
-            text: '最近一年',
+            text: '最近三个月',
             onClick(picker) {
-              let end = new Date();
-              let start = new Date();
-              start.setFullYear(end.getFullYear() - 1);
-              picker.$emit('pick', [start, end]);
-            }
-          }, {
-            text: '最近两年',
-            onClick(picker) {
-              let end = new Date();
-              let start = new Date();
-              start.setFullYear(end.getFullYear() - 2);
-              picker.$emit('pick', [start, end]);
-            }
-          }, {
-            text: '最近三年',
-            onClick(picker) {
-              let end = new Date();
-              let start = new Date();
-              start.setFullYear(end.getFullYear() - 3);
-              picker.$emit('pick', [start, end]);
-            }
-          }, {
-            text: '开业至今',
-            onClick(picker) {
-              let end = new Date();
-              let start = new Date(2018, 0, 1); // 假设开业时间为2018年1月1日
+              const end = new Date();
+              const start = new Date();
+              start.setTime(start.getTime() - 3600 * 1000 * 24 * 90);
               picker.$emit('pick', [start, end]);
             }
           }]
         },
-        orderCountDate: '',
+        orderCountDate: null,
         chartSettings: {
           xAxisType: 'time',
           area: false,
@@ -288,23 +286,44 @@
           }
         },
         chartExtend: {
+          color: ['#1E3A8A', '#4F46E5', '#3B82F6', '#60A5FA', '#93C5FD'],
+          legend: {
+            show: true,
+            textStyle: {
+              color: '#303133'
+            }
+          },
           xAxis: {
-            splitLine: {
+            axisLine: {
               lineStyle: {
-                type: 'dashed'
+                color: '#909399'
+              }
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#E4E7ED'
               }
             }
           },
           yAxis: {
-            splitLine: {
+            axisLine: {
               lineStyle: {
-                type: 'dashed'
+                color: '#909399'
+              }
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#E4E7ED'
               }
             }
           }
         },
         chartData: {
-          columns: [],
+          columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
           rows: []
         },
         loading: false,
@@ -341,87 +360,141 @@
       }
     },
     created(){
+      // 优先初始化日期范围
       this.initOrderCountDate();
+      
+      // 确保其他指标初始化
       this.getData();
-      getTodayOrdersCount().then(response => {
-        this.todayOrdersCount = response.data;
-      }).catch(error => {
-        console.error('Error fetching orders count:', error);
-      });
-      getTodaySalesAmount().then(response => {
-        this.todaySalesAmount = response.data;
-      }).catch(error => {
-        console.error('Error fetching orders amount:', error);
-      });
-      getProductOverview().then(response => {
-        this.productOverview = response.data;
-      }).catch(error => {
-        console.error('Error fetching product overview:', error);
-      });
-      getTotalMemberCount().then(response => {
-        this.totalMemberCount = response.data;
-      }).catch(error => {
-        console.error('Error fetching total member count:', error);
-      });
-      getOrderStatusStatistic().then(response => {
-        this.orderStatusStatistic = response.data;
-      }).catch(error => {
-        console.error('Error fetching pending transaction statistics:', error);
-      });
-      getOrderReturnApplyStatistic().then(response => {
-        this.orderReturnApplyStatistic = response.data;
-        console.log(this.orderReturnApplyStatistic);
-      }).catch(error => {
-        console.error('Error fetching order return apply statistic:', error);
-      });
-      getTodayNewMemberCount().then(response => {
-        this.todayNewMemberCount = response.data;
-      }).catch(error => {
-        console.error('Error fetching today new member count:', error);
-      });
-      getTodayVisitorStats().then(response => {
-        this.visitorStats = response.data;
-      }).catch(error => {
-        console.error('Error fetching today visitor stats:', error);
-      });
-      getTotalVisitorCount().then(response => {
-        this.totalVisitorCount = response.data;
-      }).catch(error => {
-        console.error('Error fetching total visitor count:', error);
-      });
+      
+      // 分别请求各项数据
+      this.fetchTodayOrdersCount();
+      this.fetchTodaySalesAmount();
+      this.fetchProductOverview();
+      this.fetchTotalMemberCount();
+      this.fetchOrderStatusStatistic();
+      this.fetchOrderReturnApplyStatistic();
+      this.fetchTodayNewMemberCount();
+      this.fetchTodayVisitorStats();
+      this.fetchTotalVisitorCount();
     },
     methods:{
+      // 各模块数据请求方法
+      fetchTodayOrdersCount() {
+        getTodayOrdersCount().then(response => {
+          this.todayOrdersCount = response.data;
+        }).catch(error => {
+          console.error('Error fetching orders count:', error);
+        });
+      },
+      fetchTodaySalesAmount() {
+        getTodaySalesAmount().then(response => {
+          this.todaySalesAmount = response.data;
+        }).catch(error => {
+          console.error('Error fetching orders amount:', error);
+        });
+      },
+      fetchProductOverview() {
+        getProductOverview().then(response => {
+          this.productOverview = response.data;
+        }).catch(error => {
+          console.error('Error fetching product overview:', error);
+        });
+      },
+      fetchTotalMemberCount() {
+        getTotalMemberCount().then(response => {
+          this.totalMemberCount = response.data;
+        }).catch(error => {
+          console.error('Error fetching total member count:', error);
+        });
+      },
+      fetchOrderStatusStatistic() {
+        getOrderStatusStatistic().then(response => {
+          this.orderStatusStatistic = response.data;
+        }).catch(error => {
+          console.error('Error fetching order status statistics:', error);
+        });
+      },
+      fetchOrderReturnApplyStatistic() {
+        getOrderReturnApplyStatistic().then(response => {
+          this.orderReturnApplyStatistic = response.data;
+        }).catch(error => {
+          console.error('Error fetching order return apply statistic:', error);
+        });
+      },
+      fetchTodayNewMemberCount() {
+        getTodayNewMemberCount().then(response => {
+          this.todayNewMemberCount = response.data;
+        }).catch(error => {
+          console.error('Error fetching today new member count:', error);
+        });
+      },
+      fetchTodayVisitorStats() {
+        getTodayVisitorStats().then(response => {
+          this.visitorStats = response.data;
+        }).catch(error => {
+          console.error('Error fetching today visitor stats:', error);
+        });
+      },
+      fetchTotalVisitorCount() {
+        getTotalVisitorCount().then(response => {
+          this.totalVisitorCount = response.data;
+        }).catch(error => {
+          console.error('Error fetching total visitor count:', error);
+        });
+      },
+      
+      // 图表相关方法
       handleDateChange(){
         this.getData();
       },
       initOrderCountDate(){
-        let start = new Date();
-        start.setTime(start.getTime() - 7 * 24 * 60 * 60 * 1000); // 默认最近一周
-        const end = new Date();
-        this.orderCountDate=[start,end];
+        if (!this.orderCountDate) {
+          const end = new Date();
+          const start = new Date();
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7); // 默认最近一周
+          this.orderCountDate = [start, end];
+        }
       },
       getData(){
-        this.loading = true;
-        // 格式化日期
-        let startDate = this.formatDate(this.orderCountDate[0]);
-        let endDate = this.formatDate(this.orderCountDate[1]);
+        if (!this.orderCountDate || !this.orderCountDate[0] || !this.orderCountDate[1]) {
+          this.initOrderCountDate();
+        }
         
-        // 调用后端API获取数据
-        getHomeChartData({
-          startDate: startDate,
-          endDate: endDate
-        }).then(response => {
-          this.chartData = {
-            columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
-            rows: response.data
-          };
-          this.dataEmpty = this.chartData.rows.length === 0;
-          this.loading = false;
-        }).catch(error => {
-          console.error('Error fetching chart data:', error);
-          this.loading = false;
+        this.loading = true;
+        this.dataEmpty = false;
+        
+        try {
+          // 格式化日期
+          const startDate = this.formatDate(this.orderCountDate[0]);
+          const endDate = this.formatDate(this.orderCountDate[1]);
+          
+          // 调用后端API获取数据
+          getHomeChartData({
+            startDate: startDate,
+            endDate: endDate
+          }).then(response => {
+            if(response.data && Array.isArray(response.data)) {
+              // 确保图表数据更新
+              this.$set(this.chartData, 'rows', response.data);
+              this.dataEmpty = response.data.length === 0;
+            } else {
+              console.warn('Home chart data is not an array:', response.data);
+              this.$set(this.chartData, 'rows', []);
+              this.dataEmpty = true;
+            }
+          }).catch(error => {
+            console.error('Error fetching chart data:', error);
+            this.$set(this.chartData, 'rows', []);
+            this.dataEmpty = true;
+          }).finally(() => {
+            this.loading = false;
+          });
+        } catch (error) {
+          console.error('Error in getData method:', error);
+          this.$set(this.chartData, 'rows', []);
           this.dataEmpty = true;
-        });
+          this.loading = false;
+        }
       },
       formatDate(date) {
         let year = date.getFullYear();
@@ -437,98 +510,214 @@
 
 <style scoped>
   .app-container {
-    margin-top: 40px;
-    margin-left: 120px;
-    margin-right: 120px;
-  }
-
-  .address-layout {
-  }
-
-  .total-layout {
     margin-top: 20px;
-  }
-
-  .total-frame {
-    border: 1px solid #DCDFE6;
-    padding: 20px;
-    height: 100px;
-  }
-
-  .total-icon {
-    color: #409EFF;
-    width: 65px;
-    height: 65px;
-  }
-
-  .total-title {
-    position: relative;
-    font-size: 16px;
-    color: #909399;
-    left: 70px;
-    top: -50px;
-  }
-
-  .total-value {
-    position: relative;
-    font-size: 18px;
-    color: #606266;
-    left: 70px;
-    top: -40px;
+    margin-left: 20px;
+    margin-right: 20px;
   }
 
   .un-handle-layout {
     margin-top: 20px;
-    border: 1px solid #DCDFE6;
+    border-radius: 8px;
+    border: 1px solid #EBEEF5;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  
+  .un-handle-layout:hover {
+    box-shadow: 0 4px 15px 0 rgba(0, 0, 0, 0.1);
   }
 
   .layout-title {
-    color: #606266;
+    color: #303133;
     padding: 15px 20px;
     background: #F2F6FC;
-    font-weight: bold;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid #EBEEF5;
+    position: relative;
+  }
+  
+  .layout-title:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 15px;
+    height: 16px;
+    width: 4px;
+    background: #409EFF;
+  }
+
+  .un-handle-layout:nth-child(5) .layout-title:before {
+    background: #1E3A8A;
   }
 
   .un-handle-content {
-    padding: 20px 40px;
+    padding: 20px;
+    background: #fff;
+  }
+
+  .total-icon {
+    width: 65px;
+    height: 65px;
+    border-radius: 50%;
+    padding: 10px;
+    background: rgba(64, 158, 255, 0.1);
+    margin-bottom: 10px;
+    transition: all 0.3s;
+  }
+  
+  .un-handle-item:hover .total-icon {
+    transform: scale(1.05);
+    background: rgba(64, 158, 255, 0.2);
+  }
+
+  .total-title {
+    position: relative;
+    font-size: 14px;
+    color: #606266;
+    left: 70px;
+    top: -60px;
+    margin-bottom: -15px;
+  }
+
+  .total-value {
+    position: relative;
+    font-size: 22px;
+    font-weight: 600;
+    color: #1E3A8A;
+    left: 70px;
+    top: -45px;
+    transition: all 0.3s;
+    text-shadow: 0 1px 2px rgba(30, 58, 138, 0.1);
+  }
+  
+  .un-handle-item:hover .total-value {
+    transform: scale(1.05);
+    text-shadow: 0 2px 4px rgba(30, 58, 138, 0.2);
+  }
+  
+  /* 重点数据样式 */
+  .el-col:nth-child(2) .total-value {
+    color: #1E3A8A;
+    font-weight: 700;
+  }
+  
+  /* 图表标题样式优化 */
+  .layout-title:contains("运营统计曲线"):before {
+    background: #1E3A8A;
+  }
+
+  .today-data .un-handle-item {
+    padding: 10px 15px;
+    border-radius: 8px;
+    background: #fff;
+    margin-bottom: 0;
+    transition: all 0.3s ease;
+  }
+  
+  .today-data .un-handle-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  .today-data .total-icon {
+    background: rgba(64, 158, 255, 0.1);
+  }
+  
+  .today-data .el-col:nth-child(1) .total-icon {
+    background: rgba(103, 194, 58, 0.1);
+  }
+  
+  .today-data .el-col:nth-child(2) .total-icon {
+    background: rgba(245, 108, 108, 0.1);
+  }
+  
+  .today-data .el-col:nth-child(3) .total-icon {
+    background: rgba(230, 162, 60, 0.1);
+  }
+  
+  .today-data .el-col:nth-child(4) .total-icon {
+    background: rgba(144, 147, 153, 0.1);
+  }
+  
+  .today-data .el-col:nth-child(5) .total-icon {
+    background: rgba(100, 102, 254, 0.1);
+  }
+
+  /* 图表相关样式 */
+  .chart-loading {
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: #F8F9FB;
+    border-radius: 6px;
+  }
+   
+  .loading-spinner {
+    text-align: center;
+    color: #909399;
+  }
+   
+  .loading-spinner i {
+    font-size: 32px;
+    margin-bottom: 10px;
+    animation: rotate 1.5s linear infinite;
+  }
+  
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+   
+  .loading-spinner p {
+    font-size: 14px;
+  }
+    
+  .chart-empty {
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+    background: #F8F9FB;
+    border-radius: 6px;
+  }
+  
+  .chart-empty i {
+    font-size: 48px;
+    margin-bottom: 20px;
+    color: #DCDFE6;
+  }
+  
+  .chart-empty p {
+    font-size: 16px;
+  }
+  
+  /* 日期选择器样式优化 */
+  .date-picker-container {
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: flex-start;
+    padding: 0 20px;
   }
 
   .un-handle-item {
-    border-bottom: 1px solid #EBEEF5;
-    padding: 10px;
+    border-radius: 6px;
+    background: #F8F9FB;
+    padding: 15px;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+    border: 1px solid transparent;
   }
-
-  .overview-layout {
-    margin-top: 20px;
-  }
-
-  .overview-item-value {
-    font-size: 24px;
-    text-align: center;
-  }
-
-  .overview-item-title {
-    margin-top: 10px;
-    text-align: center;
-  }
-
-  .out-border {
-    border: 1px solid #DCDFE6;
-  }
-
-  .statistics-layout {
-    margin-top: 20px;
-    border: 1px solid #DCDFE6;
-  }
-  .mine-layout {
-    position: absolute;
-    right: 140px;
-    top: 107px;
-    width: 250px;
-    height: 235px;
-  }
-  .address-content{
-    padding: 20px;
-    font-size: 18px
+  
+  .un-handle-item:hover {
+    background: #ffffff;
+    border-color: #EBEEF5;
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+    transform: translateY(-2px);
   }
 </style>
