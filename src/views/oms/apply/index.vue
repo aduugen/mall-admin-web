@@ -73,44 +73,13 @@
         <el-table-column label="申请时间" width="180" align="center">
           <template slot-scope="scope">{{scope.row.createTime | formatTime}}</template>
         </el-table-column>
-        <el-table-column label="用户名" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.memberUsername}}</template>
-        </el-table-column>
-        <el-table-column label="退货商品" width="350" align="center">
+        <el-table-column label="用户信息" width="180" align="center">
           <template slot-scope="scope">
-            <div v-if="scope.row.afterSaleItemList && scope.row.afterSaleItemList.length > 0">
-              <div style="display: flex; align-items: center;">
-                <img :src="scope.row.afterSaleItemList[0].productPic" style="height: 80px; width: 80px">
-                <div style="margin-left: 10px; text-align: left;">
-                  <p>{{ scope.row.afterSaleItemList[0].productName }}</p>
-                  <p>                  
-                    <span v-if="scope.row.afterSaleItemList[0].productAttr">
-                       {{ formatProductAttr(scope.row.afterSaleItemList[0].productAttr) }}
-                    </span>
-                  </p>
-                  <p>单价：￥{{ scope.row.afterSaleItemList[0].productRealPrice }}</p>
-                   <p>数量：{{ scope.row.afterSaleItemList[0].returnQuantity }}</p>
-                </div>
-              </div>
-              <div v-if="scope.row.afterSaleItemList.length > 1" style="text-align: center; color: #909399; font-size: 12px; margin-top: 5px;">
-                (共 {{ scope.row.afterSaleItemList.length }} 件商品)
-              </div>
-            </div>
-            <div v-else>
-                无商品信息
+            <div>
+              <div>用户ID：{{scope.row.memberId || '未知用户'}}</div>
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="退货总数" width="100" align="center">
-            <template slot-scope="scope">
-                {{ calcTotalQuantity(scope.row) }}
-            </template>
-        </el-table-column>
-        <el-table-column label="退款金额" width="120" align="center">
-           <template slot-scope="scope">
-             ￥{{ calcTotalAmount(scope.row) }}
-           </template>
-         </el-table-column>
         <el-table-column label="申请状态" width="140" align="center">
           <template slot-scope="scope">{{ scope.row.status | formatStatus }}</template>
         </el-table-column>
@@ -118,12 +87,13 @@
           <template slot-scope="scope">{{scope.row.handleTime | formatTime}}</template>
         </el-table-column>
         <el-table-column label="处理人" width="180" align="center">
-          <template slot-scope="scope">{{scope.row.handleMan | formatHandleMan}}</template>
+          <template slot-scope="scope">{{scope.row.handleMan || '未处理'}}</template>
         </el-table-column>
         <el-table-column label="操作" width="180" align="center">
           <template slot-scope="scope">
             <el-button
             size="mini"
+            type="primary"
             @click="handleViewDetail(scope.$index, scope.row)">查看详情</el-button>
           </template>
         </el-table-column>
@@ -339,6 +309,31 @@
 <style scoped>
   .input-width {
     width: 203px;
+  }
+  
+  .price-label, .quantity-label {
+    color: #666;
+  }
+  
+  .price-value {
+    color: #f56c6c;
+    font-weight: bold;
+  }
+  
+  .quantity-value {
+    font-weight: bold;
+  }
+  
+  .original-price {
+    color: #999;
+    font-size: 12px;
+    text-decoration: line-through;
+    margin-left: 5px;
+  }
+  
+  .refund-amount {
+    color: #f56c6c;
+    font-weight: bold;
   }
 </style>
 
