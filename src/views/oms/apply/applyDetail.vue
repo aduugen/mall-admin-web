@@ -337,7 +337,7 @@
         
         <!-- 按钮区域 -->
         <div class="action-buttons" v-show="orderReturnApply.status===0">
-          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(1)">确认退货</el-button>
+          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(1)">同意退货</el-button>
           <el-button type="danger" size="small" icon="el-icon-close" @click="handleUpdateStatus(3)">拒绝退货</el-button>
         </div>
         <div class="action-buttons" v-show="orderReturnApply.status===1">
