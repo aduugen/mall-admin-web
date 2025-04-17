@@ -1,9 +1,9 @@
 <template>
   <div class="detail-container">
-    <el-card shadow="never" class="card-container">
+    <el-card shadow="never" class="card-container" v-loading="listLoading">
       <div class="card-header">
         <i class="el-icon-goods"></i>
-        <span class="font-title-medium">退货商品</span>
+      <span class="font-title-medium">退货商品</span>
       </div>
       <el-table
         border
@@ -97,7 +97,7 @@
       </div>
     </el-card>
     
-    <el-card shadow="never" class="standard-margin card-container">
+    <el-card shadow="never" class="standard-margin card-container" v-loading="listLoading">
       <div class="card-header">
         <i class="el-icon-document"></i>
         <span class="font-title-medium">售后单信息</span>
@@ -194,7 +194,7 @@
                 <el-input 
                   size="small" 
                   v-model="updateStatusParam.returnAmount"
-                  :disabled="orderReturnApply.status!==0"
+                      :disabled="orderReturnApply.status!==0"
                   style="width:200px;margin-left: 5px">
                 </el-input>
               </div>
@@ -215,36 +215,36 @@
                 <el-select 
                   size="small"
                   style="width: 200px"
-                  :disabled="orderReturnApply.status!==0"
-                  v-model="updateStatusParam.companyAddressId">
+                       :disabled="orderReturnApply.status!==0"
+                       v-model="updateStatusParam.companyAddressId">
                   <el-option 
                     v-for="address in companyAddressList"
-                    :key="address.id"
-                    :value="address.id"
-                    :label="address.addressName">
-                  </el-option>
-                </el-select>
-              </div>
+                         :key="address.id"
+                         :value="address.id"
+                         :label="address.addressName">
+              </el-option>
+            </el-select>
+        </div>
               
               <div class="address-info">
                 <div class="address-item">
                   <span class="address-info-label">收货人：</span>
                   <span class="address-info-value">{{currentAddress ? currentAddress.name : '加载中...'}}</span>
-                </div>
+      </div>
                 <div class="address-item">
                   <span class="address-info-label">所在地区：</span>
                   <span class="address-info-value">{{currentAddress | formatRegion}}</span>
-                </div>
+      </div>
                 <div class="address-item">
                   <span class="address-info-label">详细地址：</span>
                   <span class="address-info-value">{{currentAddress ? currentAddress.detailAddress : '加载中...'}}</span>
-                </div>
+      </div>
                 <div class="address-item">
                   <span class="address-info-label">联系电话：</span>
                   <span class="address-info-value">{{currentAddress ? currentAddress.phone : '加载中...'}}</span>
-                </div>
-              </div>
-            </div>
+      </div>
+      </div>
+      </div>
           </div>
         </div>
         
@@ -337,11 +337,16 @@
         
         <!-- 按钮区域 -->
         <div class="action-buttons" v-show="orderReturnApply.status===0">
-          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(1)">同意退货</el-button>
-          <el-button type="danger" size="small" icon="el-icon-close" @click="handleUpdateStatus(3)">拒绝退货</el-button>
+          <el-button type="primary" size="small" icon="el-icon-check" @click="handleApprove">同意退货</el-button>
+          <el-button type="danger" size="small" icon="el-icon-close" @click="handleReject">拒绝退货</el-button>
         </div>
         <div class="action-buttons" v-show="orderReturnApply.status===1">
-          <el-button type="primary" size="small" icon="el-icon-check" @click="handleUpdateStatus(2)">确认收货</el-button>
+          <el-button type="primary" size="small" icon="el-icon-check" @click="handleConfirmReceive">确认收货</el-button>
+        </div>
+        
+        <!-- 打印按钮 -->
+        <div class="print-button">
+          <el-button type="success" size="small" icon="el-icon-printer" @click="handlePrint">打印售后单</el-button>
         </div>
         
       </div>
@@ -358,13 +363,246 @@
         <img :src="previewImage" class="preview-image">
       </div>
     </div>
+
+    <!-- 状态流转图 -->
+    <el-card class="status-flow card-container" shadow="never" v-loading="listLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-s-operation"></i>
+        <span class="font-title-medium">处理流程</span>
+      </div>
+      <el-steps :active="currentStep" finish-status="success" align-center>
+        <el-step title="申请提交" description="会员提交退货申请"></el-step>
+        <el-step title="商家审核" description="商家审核退货申请"></el-step>
+        <el-step title="商品寄回" description="会员寄回商品"></el-step>
+        <el-step title="商家收货" description="商家确认收货"></el-step>
+        <el-step title="质检处理" description="商家进行质检"></el-step>
+        <el-step title="退款处理" description="系统处理退款"></el-step>
+        <el-step title="完成" description="售后流程结束"></el-step>
+      </el-steps>
+    </el-card>
+
+    <!-- 操作按钮 -->
+    <el-card class="action-buttons card-container" shadow="never" v-if="canOperate" v-loading="submitLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-s-tools"></i>
+        <span class="font-title-medium">操作</span>
+      </div>
+      <div class="button-container">
+        <!-- 待处理状态的操作 -->
+        <div v-if="orderReturnApply.status === 0">
+          <el-button type="primary" @click="handleApprove">同意退货</el-button>
+          <el-button type="danger" @click="handleReject">拒绝退货</el-button>
+        </div>
+        
+        <!-- 已发货状态的操作 -->
+        <div v-if="orderReturnApply.status === 3">
+          <el-button type="primary" @click="handleConfirmReceive">确认收货</el-button>
+        </div>
+        
+        <!-- 已收货状态的操作 -->
+        <div v-if="orderReturnApply.status === 4">
+          <el-button type="primary" @click="handleQualityCheck">开始质检</el-button>
+        </div>
+        
+        <!-- 质检中状态的操作 -->
+        <div v-if="orderReturnApply.status === 5">
+          <el-button type="success" @click="handleQualityPass">质检通过</el-button>
+          <el-button type="danger" @click="handleQualityFail">质检不通过</el-button>
+        </div>
+        
+        <!-- 质检通过状态的操作 -->
+        <div v-if="orderReturnApply.status === 6">
+          <el-button type="primary" @click="handleRefund">确认退款</el-button>
+        </div>
+        
+        <!-- 退款中状态的操作 -->
+        <div v-if="orderReturnApply.status === 8">
+          <el-button type="success" @click="handleComplete">完成退款</el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 物流信息 -->
+    <el-card class="logistics-info card-container" shadow="never" v-if="hasLogistics" v-loading="listLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-truck"></i>
+        <span class="font-title-medium">物流信息</span>
+      </div>
+      <el-form label-width="120px">
+        <el-form-item label="物流公司">
+          <span>{{orderReturnApply.logisticsCompany || '无'}}</span>
+        </el-form-item>
+        <el-form-item label="物流单号">
+          <span>{{orderReturnApply.logisticsNumber || '无'}}</span>
+        </el-form-item>
+        <el-form-item label="发货时间">
+          <span>{{orderReturnApply.shippingTime | formatTime}}</span>
+        </el-form-item>
+        <el-form-item label="收货时间" v-if="orderReturnApply.receiveTime">
+          <span>{{orderReturnApply.receiveTime | formatTime}}</span>
+        </el-form-item>
+        <el-form-item label="收货人" v-if="orderReturnApply.receiveMan">
+          <span>{{orderReturnApply.receiveMan}}</span>
+        </el-form-item>
+        <el-form-item label="收货备注" v-if="orderReturnApply.receiveNote">
+          <span>{{orderReturnApply.receiveNote}}</span>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 质检信息 -->
+    <el-card class="quality-check-info card-container" shadow="never" v-if="hasQualityCheck" v-loading="listLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-check"></i>
+        <span class="font-title-medium">质检信息</span>
+      </div>
+      <el-form label-width="120px">
+        <el-form-item label="质检结果" v-if="orderReturnApply.checkResult !== null">
+          <el-tag :type="orderReturnApply.checkResult === 1 ? 'success' : 'danger'">
+            {{orderReturnApply.checkResult === 1 ? '通过' : '不通过'}}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="质检人员" v-if="orderReturnApply.checkMan">
+          <span>{{orderReturnApply.checkMan}}</span>
+        </el-form-item>
+        <el-form-item label="质检时间" v-if="orderReturnApply.checkTime">
+          <span>{{orderReturnApply.checkTime | formatTime}}</span>
+        </el-form-item>
+        <el-form-item label="质检备注" v-if="orderReturnApply.checkNote">
+          <span>{{orderReturnApply.checkNote}}</span>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 退款信息 -->
+    <el-card class="refund-info card-container" shadow="never" v-if="hasRefund" v-loading="listLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-money"></i>
+        <span class="font-title-medium">退款信息</span>
+      </div>
+      <el-form label-width="120px">
+        <el-form-item label="退款金额">
+          <span class="price">￥{{orderReturnApply.returnAmount | formatMoney}}</span>
+        </el-form-item>
+        <el-form-item label="退款方式" v-if="orderReturnApply.refundType">
+          <span>{{orderReturnApply.refundType === 1 ? '原路退回' : '其他方式'}}</span>
+        </el-form-item>
+        <el-form-item label="退款时间" v-if="orderReturnApply.refundTime">
+          <span>{{orderReturnApply.refundTime | formatTime}}</span>
+        </el-form-item>
+        <el-form-item label="退款状态" v-if="orderReturnApply.refundStatus !== null">
+          <el-tag :type="getRefundStatusType(orderReturnApply.refundStatus)">
+            {{formatRefundStatus(orderReturnApply.refundStatus)}}
+          </el-tag>
+        </el-form-item>
+        <el-form-item label="退款备注" v-if="orderReturnApply.refundNote">
+          <span>{{orderReturnApply.refundNote}}</span>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 操作日志展示 -->
+    <el-card class="operation-logs card-container" shadow="never" v-if="hasOperationLogs" v-loading="listLoading">
+      <div slot="header" class="card-header">
+        <i class="el-icon-time"></i>
+        <span class="font-title-medium">操作日志</span>
+      </div>
+      <el-timeline>
+        <el-timeline-item
+          v-for="(log, index) in orderReturnApply.operationLogs"
+          :key="index"
+          :type="getLogIconType(log.operateType)"
+          :color="getLogIconColor(log.operateType)"
+          :icon="getOperationIcon(log.operateType)"
+          :timestamp="$options.filters.formatTime(log.createTime)">
+          <div class="timeline-content">
+            <h4>{{ formatOperationType(log.operateType) }}</h4>
+            <p v-if="log.note"><span class="log-label">备注：</span>{{ log.note }}</p>
+            <p v-if="log.afterSaleStatus !== undefined && log.afterSaleStatus !== null">
+              <span class="log-label">状态：</span>{{ $options.filters.formatStatus(log.afterSaleStatus) }}
+            </p>
+            <div v-if="log.operateType == OPERATION_TYPE.SHIP" class="log-details">
+              <p v-if="log.deliveryCompany"><span class="log-label">物流公司：</span>{{ log.deliveryCompany }}</p>
+              <p v-if="log.deliverySn"><span class="log-label">物流单号：</span>{{ log.deliverySn }}</p>
+            </div>
+            <div v-if="[OPERATION_TYPE.CHECK_PASS, OPERATION_TYPE.CHECK_FAIL].includes(log.operateType)" class="log-details">
+              <p v-if="log.checkMan"><span class="log-label">质检人员：</span>{{ log.checkMan }}</p>
+              <p v-if="log.checkResult !== undefined && log.checkResult !== null">
+                <span class="log-label">质检结果：</span>
+                <el-tag :type="log.checkResult === 1 ? 'success' : 'danger'">
+                  {{ log.checkResult === 1 ? '通过' : '不通过' }}
+                </el-tag>
+              </p>
+            </div>
+            <div v-if="[OPERATION_TYPE.START_REFUND, OPERATION_TYPE.COMPLETE_REFUND].includes(log.operateType)" class="log-details">
+              <p v-if="log.returnAmount !== undefined && log.returnAmount !== null">
+                <span class="log-label">退款金额：</span>¥ {{ $options.filters.formatMoney(log.returnAmount) }}
+              </p>
+              <p v-if="log.refundType !== undefined && log.refundType !== null">
+                <span class="log-label">退款方式：</span>{{ log.refundType === 1 ? '原路退回' : '其他方式' }}
+              </p>
+            </div>
+            <p class="log-operator"><span class="log-label">操作人：</span>{{ log.operateMan || '系统' }}</p>
+          </div>
+        </el-timeline-item>
+      </el-timeline>
+    </el-card>
   </div>
 </template>
 <script>
-  import {getApplyDetail,updateApplyStatus} from '@/api/returnApply';
+  import {getApplyDetail,updateApplyStatus, getCompanyAddress} from '@/api/returnApply';
   import {fetchList} from '@/api/companyAddress';
   import {formatDate} from '@/utils/date';
+  import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
 
+  // 状态常量定义
+  const STATUS = {
+    PENDING: 0,        // 待处理
+    APPROVED: 1,       // 已同意
+    REJECTED: 2,       // 已拒绝
+    SHIPPED: 3,        // 已发货
+    RECEIVED: 4,       // 已收货
+    CHECKING: 5,       // 质检中
+    CHECK_PASS: 6,     // 质检通过
+    CHECK_FAIL: 7,     // 质检不通过
+    REFUNDING: 8,      // 退款中
+    COMPLETED: 9       // 已完成
+  };
+
+  // 操作类型常量
+  const OPERATION_TYPE = {
+    PENDING: 0,       // 处理中
+    APPROVE: 1,       // 同意申请
+    REJECT: 2,        // 拒绝申请
+    SHIP: 3,          // 确认发货
+    RECEIVE: 4,       // 确认收货
+    START_CHECK: 5,   // 开始质检
+    CHECK_PASS: 6,    // 质检通过
+    CHECK_FAIL: 7,    // 质检不通过
+    START_REFUND: 8,  // 发起退款
+    COMPLETE_REFUND: 9// 完成退款
+  };
+
+  // 退款状态常量
+  const REFUND_STATUS = {
+    PROCESSING: 0,    // 处理中
+    SUCCESS: 1,        // 成功
+    FAILED: 2          // 失败
+  };
+
+  // 退款方式常量定义
+  const REFUND_TYPE = {
+    ORIGINAL: 1,       // 原路退回
+    OTHER: 2           // 其他方式
+  };
+
+  // 质检结果常量定义
+  const CHECK_RESULT = {
+    FAIL: 0,           // 不通过
+    PASS: 1            // 通过
+  };
+
+  // 默认参数
   const defaultUpdateStatusParam = {
     companyAddressId: null,
     handleMan: 'admin',
@@ -408,7 +646,15 @@
         previewVisible: false,
         previewImage: '',
         previewTimer: null,
-        isMouseOnMask: false
+        isMouseOnMask: false,
+        currentStep: 0,
+        canOperate: false,
+        listLoading: false,
+        addressLoading: false,
+        submitLoading: false,
+        STATUS,
+        OPERATION_TYPE,
+        REFUND_STATUS
       }
     },
     created() {
@@ -438,19 +684,76 @@
           }
         }
         return address;
+      },
+      currentStep() {
+        // 根据状态计算当前步骤
+        const stepMap = {
+          [STATUS.PENDING]: 1,    // 待处理
+          [STATUS.APPROVED]: 2,   // 已同意
+          [STATUS.REJECTED]: 2,   // 已拒绝（流程结束）
+          [STATUS.SHIPPED]: 3,    // 已发货
+          [STATUS.RECEIVED]: 4,   // 已收货
+          [STATUS.CHECKING]: 5,   // 质检中
+          [STATUS.CHECK_PASS]: 5, // 质检通过
+          [STATUS.CHECK_FAIL]: 5, // 质检不通过
+          [STATUS.REFUNDING]: 6,  // 退款中
+          [STATUS.COMPLETED]: 7   // 已完成
+        };
+        return stepMap[this.orderReturnApply.status] || 0;
+      },
+      canOperate() {
+        // 根据状态判断是否可以操作
+        const status = this.orderReturnApply.status;
+        return [STATUS.PENDING, STATUS.SHIPPED, STATUS.RECEIVED, STATUS.CHECKING, STATUS.CHECK_PASS, STATUS.REFUNDING].includes(status);
+      },
+      hasLogistics() {
+        // 判断是否有物流信息
+        return this.orderReturnApply.status >= 3;
+      },
+      hasQualityCheck() {
+        // 判断是否有质检信息
+        return this.orderReturnApply.status >= 5;
+      },
+      hasRefund() {
+        // 判断是否有退款信息
+        return this.orderReturnApply.status >= 8;
+      },
+      hasOperationLogs() {
+        return this.orderReturnApply && 
+               this.orderReturnApply.operationLogs && 
+               this.orderReturnApply.operationLogs.length > 0;
       }
     },
     filters: {
       formatStatus(status) {
-        if (status === 0) {
-          return "待处理";
-        } else if (status === 1) {
-          return "退货中";
-        } else if (status === 2) {
-          return "已完成";
-        } else {
-          return "已拒绝";
-        }
+        const statusMap = {
+          [STATUS.PENDING]: "待处理",
+          [STATUS.APPROVED]: "已同意",
+          [STATUS.REJECTED]: "已拒绝",
+          [STATUS.SHIPPED]: "已发货",
+          [STATUS.RECEIVED]: "已收货",
+          [STATUS.CHECKING]: "质检中",
+          [STATUS.CHECK_PASS]: "质检通过",
+          [STATUS.CHECK_FAIL]: "质检不通过",
+          [STATUS.REFUNDING]: "退款中",
+          [STATUS.COMPLETED]: "已完成"
+        };
+        return statusMap[status] || "未知状态";
+      },
+      getStatusType(status) {
+        const statusTypeMap = {
+          [STATUS.PENDING]: 'warning',     // 待处理
+          [STATUS.APPROVED]: 'primary',    // 已同意
+          [STATUS.REJECTED]: 'danger',     // 已拒绝
+          [STATUS.SHIPPED]: 'info',        // 已发货
+          [STATUS.RECEIVED]: 'success',    // 已收货
+          [STATUS.CHECKING]: 'warning',    // 质检中
+          [STATUS.CHECK_PASS]: 'success',  // 质检通过
+          [STATUS.CHECK_FAIL]: 'danger',   // 质检不通过
+          [STATUS.REFUNDING]: 'primary',   // 退款中
+          [STATUS.COMPLETED]: 'success'    // 已完成
+        };
+        return statusTypeMap[status] || 'info';
       },
       formatTime(time) {
         if (time == null || time === '') {
@@ -471,18 +774,89 @@
       formatMoney(value) {
         if (!value) return '0.00';
         return parseFloat(value).toFixed(2);
+      },
+      formatOperationType(type) {
+        if(type == null) return '未知操作';
+        
+        // 根据后端定义的操作类型映射显示名称
+        const typeMap = {
+          [OPERATION_TYPE.PENDING]: '处理中',
+          [OPERATION_TYPE.APPROVE]: '同意申请',
+          [OPERATION_TYPE.REJECT]: '拒绝申请',
+          [OPERATION_TYPE.SHIP]: '确认发货',
+          [OPERATION_TYPE.RECEIVE]: '确认收货',
+          [OPERATION_TYPE.START_CHECK]: '开始质检',
+          [OPERATION_TYPE.CHECK_PASS]: '质检通过',
+          [OPERATION_TYPE.CHECK_FAIL]: '质检不通过',
+          [OPERATION_TYPE.START_REFUND]: '发起退款',
+          [OPERATION_TYPE.COMPLETE_REFUND]: '完成退款'
+        };
+        
+        return typeMap[type] || '未知操作';
+      },
+      getRefundStatusType(status) {
+        const typeMap = {
+          [REFUND_STATUS.PROCESSING]: 'warning',  // 处理中
+          [REFUND_STATUS.SUCCESS]: 'success',     // 成功
+          [REFUND_STATUS.FAILED]: 'danger'        // 失败
+        };
+        return typeMap[status] || 'info';
+      },
+      formatRefundStatus(status) {
+        const statusMap = {
+          [REFUND_STATUS.PROCESSING]: '处理中',
+          [REFUND_STATUS.SUCCESS]: '已完成',
+          [REFUND_STATUS.FAILED]: '失败'
+        };
+        return statusMap[status] || '未知状态';
+      },
+      getLogIconType(type) {
+        const iconMap = {
+          [OPERATION_TYPE.PENDING]: 'info',
+          [OPERATION_TYPE.APPROVE]: 'primary',
+          [OPERATION_TYPE.REJECT]: 'danger',
+          [OPERATION_TYPE.SHIP]: 'success',
+          [OPERATION_TYPE.RECEIVE]: 'success',
+          [OPERATION_TYPE.START_CHECK]: 'warning',
+          [OPERATION_TYPE.CHECK_PASS]: 'success',
+          [OPERATION_TYPE.CHECK_FAIL]: 'danger',
+          [OPERATION_TYPE.START_REFUND]: 'primary',
+          [OPERATION_TYPE.COMPLETE_REFUND]: 'success'
+        };
+        return iconMap[type] || 'info';
+      },
+      getLogIconColor(type) {
+        const colorMap = {
+          [OPERATION_TYPE.PENDING]: '',
+          [OPERATION_TYPE.APPROVE]: 'primary',
+          [OPERATION_TYPE.REJECT]: 'danger',
+          [OPERATION_TYPE.SHIP]: 'success',
+          [OPERATION_TYPE.RECEIVE]: 'success',
+          [OPERATION_TYPE.START_CHECK]: 'warning',
+          [OPERATION_TYPE.CHECK_PASS]: 'success',
+          [OPERATION_TYPE.CHECK_FAIL]: 'danger',
+          [OPERATION_TYPE.START_REFUND]: 'primary',
+          [OPERATION_TYPE.COMPLETE_REFUND]: 'success'
+        };
+        return colorMap[type] || '';
+      },
+      getOperationIcon(operateType) {
+        const iconMap = {
+          [OPERATION_TYPE.PENDING]: 'el-icon-time',
+          [OPERATION_TYPE.APPROVE]: 'el-icon-check',
+          [OPERATION_TYPE.REJECT]: 'el-icon-close',
+          [OPERATION_TYPE.SHIP]: 'el-icon-s-promotion',
+          [OPERATION_TYPE.RECEIVE]: 'el-icon-box',
+          [OPERATION_TYPE.START_CHECK]: 'el-icon-search',
+          [OPERATION_TYPE.CHECK_PASS]: 'el-icon-circle-check',
+          [OPERATION_TYPE.CHECK_FAIL]: 'el-icon-circle-close',
+          [OPERATION_TYPE.START_REFUND]: 'el-icon-money',
+          [OPERATION_TYPE.COMPLETE_REFUND]: 'el-icon-circle-check'
+        };
+        return iconMap[operateType] || 'el-icon-more';
       }
     },
     methods: {
-      getStatusType(status) {
-        switch(status) {
-          case 0: return 'warning';
-          case 1: return 'primary';
-          case 2: return 'success';
-          case 3: return 'danger';
-          default: return 'info';
-        }
-      },
       formatProductAttr(jsonAttr) {
         if (!jsonAttr || jsonAttr === '[]') return '';
         try {
@@ -558,55 +932,290 @@
         this.$router.push({path:'/oms/orderDetail', query:{id:this.orderReturnApply.orderId}});
       },
       getDetail() {
+        this.listLoading = true;
+        if(!this.id) {
+          this.$message.error('未找到售后单ID');
+          this.listLoading = false;
+          this.$router.push('/oms/apply');
+          return;
+        }
         getApplyDetail(this.id).then(response => {
           this.orderReturnApply = response.data;
-          this.productList = response.data.afterSaleItemList || [];
-          console.log("response.data",response.data);
-          console.log("this.productList",this.productList);
-          this.updateStatusParam.returnAmount = this.calculatedTotalAmount.toFixed(2);
-          this.getCompanyAddressList();
+          // 计算当前步骤
+          this.setCurrentStep();
+          this.listLoading = false;
         }).catch(error => {
-            console.error("获取售后详情失败:", error);
-            this.$message.error("获取售后详情失败，请稍后重试");
+          this.listLoading = false;
+          this.$message({
+            type: 'error',
+            message: '获取售后单详情失败: ' + (error.message || '未知错误')
+          });
+          console.error('获取售后单详情失败', error);
         });
       },
       getCompanyAddressList() {
+        this.$set(this, 'addressLoading', true);
         fetchList().then(response => {
           this.companyAddressList = response.data || [];
+          if(this.companyAddressList.length === 0) {
+            this.$message.warning('没有可用的公司地址，请先添加收货地址');
+          }
+          
           if(this.companyAddressList.length > 0 && !this.updateStatusParam.companyAddressId){
-             let defaultAddress = this.companyAddressList.find(addr => addr.receiveStatus === 1);
-             this.updateStatusParam.companyAddressId = defaultAddress ? defaultAddress.id : this.companyAddressList[0].id;
+            let defaultAddress = this.companyAddressList.find(addr => addr.receiveStatus === 1);
+            this.updateStatusParam.companyAddressId = defaultAddress ? defaultAddress.id : this.companyAddressList[0].id;
           }
         }).catch(error => {
-            console.error("获取公司地址列表失败:", error);
+          console.error("获取公司地址列表失败:", error);
+          this.$message.error("获取公司地址列表失败，请稍后重试");
+        }).finally(() => {
+          this.$set(this, 'addressLoading', false);
         });
       },
       handleUpdateStatus(status) {
-        this.updateStatusParam.status = status;
-        this.$confirm('是否要进行此操作?', '提示', {
+        let params = Object.assign({}, this.updateStatusParam);
+        params.status = status;
+        params.id = this.id;
+
+        // 根据状态处理不同的参数
+        switch(status) {
+          case STATUS.APPROVED: // 已同意
+            if(!params.companyAddressId) {
+              this.$message({
+                message: '请选择收货地址',
+                type: 'warning',
+                duration: 1000
+              });
+              return;
+            }
+            params.handleMan = this.$store.getters.name || 'admin';
+            break;
+          case STATUS.REJECTED: // 已拒绝 - 不应该直接调用，应该使用handleReject方法
+            return this.handleReject();
+          case STATUS.SHIPPED: // 已发货
+            this.$prompt('请输入物流公司', '提示', {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          if(status === 1 || status === 3) {
-             this.updateStatusParam.handleMan = this.$store.getters.name || 'admin';
-          } else if (status === 2) {
-             this.updateStatusParam.receiveMan = this.$store.getters.name || 'admin';
-          }
-          
-          updateApplyStatus(this.id, this.updateStatusParam).then(response => {
-            this.$message({
-              message: '操作成功！',
-              type: 'success',
-              duration: 1000
+              inputPlaceholder: '请输入物流公司',
+              inputPattern: /\S+/,
+              inputErrorMessage: '物流公司不能为空'
+            }).then(({ value }) => {
+              params.logisticsCompany = value;
+              this.$prompt('请输入物流单号', '提示', {
+                confirmButtonText: '确定',
+                cancelButtonText: '取消',
+                inputPlaceholder: '请输入物流单号',
+                inputPattern: /\S+/,
+                inputErrorMessage: '物流单号不能为空'
+              }).then(({ value }) => {
+                params.logisticsNumber = value;
+                this.submitUpdateStatus(params);
+              });
+            }).catch(() => {
+              // 取消
             });
-            this.$router.back();
-          }).catch(error => {
-            console.error("更新售后状态失败:", error);
-            this.$message.error("更新售后状态失败，请稍后重试");
-          });
-        }).catch(() => {
+            return;
+          case 4: // 已收货 - 不应该直接调用，应该使用handleConfirmReceive方法
+            return this.handleConfirmReceive();
+          case 5: // 质检中
+            this.$prompt('请输入质检人员', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              inputPlaceholder: '请输入质检人员',
+              inputPattern: /\S+/,
+              inputErrorMessage: '质检人员不能为空'
+            }).then(({ value }) => {
+              params.checkMan = value || this.$store.getters.name || 'admin';
+              this.submitUpdateStatus(params);
+            }).catch(() => {
+              // 取消
+            });
+            return;
+          case 6: // 质检通过
+            this.$prompt('请输入质检备注', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              inputPlaceholder: '请输入质检备注（可选）'
+            }).then(({ value }) => {
+              params.checkNote = value;
+              params.checkResult = 1; // 通过
+              params.checkMan = params.checkMan || this.$store.getters.name || 'admin';
+              this.submitUpdateStatus(params);
+            }).catch(() => {
+              // 取消
+            });
+            return;
+          case 7: // 质检不通过
+            this.$prompt('请输入质检不通过原因', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              inputPlaceholder: '请输入质检不通过原因',
+              inputPattern: /\S+/,
+              inputErrorMessage: '质检不通过原因不能为空'
+            }).then(({ value }) => {
+              params.checkNote = value;
+              params.checkResult = 0; // 不通过
+              params.checkMan = params.checkMan || this.$store.getters.name || 'admin';
+              this.submitUpdateStatus(params);
+            }).catch(() => {
+              // 取消
+            });
+            return;
+          case 8: // 退款中
+            this.$confirm('请选择退款方式', '提示', {
+              confirmButtonText: '原路退回',
+              cancelButtonText: '其他方式',
+              type: 'info'
+        }).then(() => {
+              params.refundType = 1; // 原路退回
+              this.submitUpdateStatus(params);
+            }).catch((action) => {
+              if (action === 'cancel') {
+                params.refundType = 2; // 其他方式
+                this.submitUpdateStatus(params);
+              }
+            });
+            return;
+          case 9: // 已完成
+            this.$prompt('请输入退款备注', '提示', {
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
+              inputPlaceholder: '请输入退款备注（可选）'
+            }).then(({ value }) => {
+              params.refundNote = value;
+              params.refundStatus = 1; // 成功
+              this.submitUpdateStatus(params);
+            }).catch(() => {
+              // 取消
+            });
+            return;
+        }
+
+        this.submitUpdateStatus(params);
+      },
+      // 提交更新状态
+      submitUpdateStatus(params) {
+        this.submitLoading = true;
+        
+        // 使用工具函数进行安全更新
+        safeUpdateStatus(
+          this.id, 
+          params,
+          () => {
+            // 成功回调
+            this.getDetail();
+            this.submitLoading = false;
+          },
+          () => {
+            // 错误回调
+            this.submitLoading = false;
+          }
+        );
+      },
+      handleApprove() {
+        let params = Object.assign({}, this.updateStatusParam);
+        params.handleMan = this.$store.getters.name || 'admin';
+        this.handleUpdateStatus(1);
+      },
+      handleReject() {
+        this.$prompt('请输入拒绝原因', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPattern: /^.{1,200}$/,
+          inputErrorMessage: '拒绝原因不能为空且不能超过200字'
+        }).then(({ value }) => {
+          let params = Object.assign({}, this.updateStatusParam);
+          params.handleMan = this.$store.getters.name || 'admin';
+          params.handleNote = value;
+          params.status = 2; // 已拒绝
+          this.submitUpdateStatus(params);
         });
+      },
+      handleConfirmReceive() {
+        this.$prompt('请输入收货备注', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          inputPlaceholder: '请输入收货备注（可选）'
+        }).then(({ value }) => {
+          let params = Object.assign({}, this.updateStatusParam);
+          params.receiveMan = this.$store.getters.name || 'admin';
+          params.receiveNote = value;
+          params.status = 4; // 已收货
+          this.submitUpdateStatus(params);
+        });
+      },
+      handleQualityCheck() {
+        this.handleUpdateStatus(5); // 质检中
+      },
+      handleQualityPass() {
+        this.handleUpdateStatus(6); // 质检通过
+      },
+      handleQualityFail() {
+        this.handleUpdateStatus(7); // 质检不通过
+      },
+      handleRefund() {
+        this.handleUpdateStatus(8); // 退款中
+      },
+      handleComplete() {
+        this.handleUpdateStatus(9); // 已完成
+      },
+      handlePrint() {
+        window.print(); // 这是一个简单的打印实现，可以根据需要使用更复杂的打印库
+      },
+      getRefundStatusType(status) {
+        const typeMap = {
+          0: 'warning',  // 处理中
+          1: 'success',  // 成功
+          2: 'danger'    // 失败
+        };
+        return typeMap[status] || 'info';
+      },
+      formatRefundStatus(status) {
+        const statusMap = {
+          0: '处理中',
+          1: '已完成',
+          2: '失败'
+        };
+        return statusMap[status] || '未知状态';
+      },
+      formatOperationType(type) {
+        if(type == null) return '未知操作';
+        
+        // 根据后端定义的操作类型映射显示名称
+        const typeMap = {
+          0: '处理中',
+          1: '同意申请',
+          2: '拒绝申请',
+          3: '确认发货',
+          4: '确认收货',
+          5: '开始质检',
+          6: '质检通过',
+          7: '质检不通过',
+          8: '发起退款',
+          9: '完成退款'
+        };
+        
+        return typeMap[type] || '未知操作';
+      },
+      validateUpdateParams(params) {
+        // 使用工具函数进行验证
+        return validateStatusParams(params, params.status);
+      },
+      setCurrentStep() {
+        // 根据状态计算当前步骤
+        const stepMap = {
+          0: 1, // 待处理
+          1: 2, // 已同意
+          2: 2, // 已拒绝（流程结束）
+          3: 3, // 已发货
+          4: 4, // 已收货
+          5: 5, // 质检中
+          6: 5, // 质检通过
+          7: 5, // 质检不通过
+          8: 6, // 退款中
+          9: 7  // 已完成
+        };
+        this.currentStep = stepMap[this.orderReturnApply.status] || 0;
       }
     }
   }
@@ -999,6 +1608,183 @@
   .proof-image-wrapper:hover {
     transform: scale(1.05);
     transition: transform 0.3s;
+  }
+
+  /* 打印样式 */
+  @media print {
+    .detail-container {
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .el-button, 
+    .action-buttons, 
+    .print-button,
+    .image-preview-mask {
+      display: none !important;
+    }
+    
+    .el-card {
+      box-shadow: none !important;
+      border: 1px solid #ebeef5;
+      margin-bottom: 15px !important;
+      break-inside: avoid;
+    }
+    
+    .el-table {
+      width: 100% !important;
+    }
+    
+    .el-table th.is-leaf, 
+    .el-table td {
+      border-bottom: 1px solid #ebeef5 !important;
+    }
+    
+    body {
+      font-size: 12px !important;
+      color: #333 !important;
+    }
+    
+    .card-header {
+      padding: 10px !important;
+    }
+    
+    .status-flow {
+      page-break-before: always;
+    }
+  }
+
+  /* 添加加载状态指示器的样式 */
+  .el-loading-mask {
+    z-index: 1000;
+  }
+
+  /* 操作日志样式 */
+  .operation-logs {
+    margin-top: 20px;
+  }
+
+  /* 加载状态指示器样式优化 */
+  .el-loading-mask {
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+
+  /* 按钮加载状态 */
+  .button-loading {
+    position: relative;
+    pointer-events: none;
+  }
+
+  .button-loading::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: 4px;
+  }
+
+  /* 错误提示样式 */
+  .error-message {
+    color: #f56c6c;
+    font-size: 14px;
+    margin: 10px 0;
+    padding: 8px 16px;
+    background-color: #fef0f0;
+    border-radius: 4px;
+    border-left: 3px solid #f56c6c;
+  }
+
+  /* 退款信息高亮 */
+  .refund-amount-highlight {
+    color: #f56c6c;
+    font-weight: bold;
+    font-size: 16px;
+  }
+
+  /* 响应式布局优化 */
+  @media screen and (max-width: 768px) {
+    .info-card-wrapper {
+      flex-direction: column;
+    }
+    
+    .info-card {
+      width: 100%;
+      margin-right: 0;
+      margin-bottom: 15px;
+    }
+    
+    .el-form-item {
+      margin-bottom: 18px;
+    }
+  }
+
+  /* 操作日志样式 */
+  .operation-log-card {
+    margin-top: 20px;
+  }
+
+  .timeline-content {
+    padding: 10px 15px;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+
+  .timeline-content h4 {
+    margin: 0 0 10px 0;
+    color: #303133;
+    font-weight: 500;
+  }
+
+  .log-label {
+    color: #606266;
+    font-weight: 500;
+    display: inline-block;
+    width: 80px;
+  }
+
+  .log-details {
+    margin: 8px 0;
+    padding: 8px;
+    background-color: #fff;
+    border-radius: 4px;
+    border-left: 3px solid #409EFF;
+  }
+
+  .log-operator {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #909399;
+  }
+
+  /* 时间线样式优化 */
+  .el-timeline {
+    padding-left: 10px;
+    margin-top: 15px;
+  }
+
+  .el-timeline-item {
+    padding-bottom: 20px;
+  }
+
+  .el-timeline-item__timestamp {
+    color: #909399;
+    font-size: 13px;
+  }
+
+  .el-timeline-item__wrapper {
+    padding-left: 20px;
+  }
+
+  @media print {
+    .operation-log-card {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
   }
 </style>
 

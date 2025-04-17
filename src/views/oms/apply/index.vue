@@ -205,16 +205,40 @@
       value: 0
     },
     {
-      label: '退货中',
+      label: '已同意',
       value: 1
     },
     {
-      label: '已完成',
+      label: '已拒绝',
       value: 2
     },
     {
-      label: '已拒绝',
+      label: '已发货',
       value: 3
+    },
+    {
+      label: '已收货',
+      value: 4
+    },
+    {
+      label: '质检中',
+      value: 5
+    },
+    {
+      label: '质检通过',
+      value: 6
+    },
+    {
+      label: '质检不通过',
+      value: 7
+    },
+    {
+      label: '退款中',
+      value: 8
+    },
+    {
+      label: '已完成',
+      value: 9
     }
   ];
   export default {
@@ -251,11 +275,23 @@
         if (status === 0) {
           return '待处理';
         } else if (status === 1) {
-          return '退货中';
+          return '已同意';
         } else if (status === 2) {
-          return '已完成';
-        } else if (status === 3) {
           return '已拒绝';
+        } else if (status === 3) {
+          return '已发货';
+        } else if (status === 4) {
+          return '已收货';
+        } else if (status === 5) {
+          return '质检中';
+        } else if (status === 6) {
+          return '质检通过';
+        } else if (status === 7) {
+          return '质检不通过';
+        } else if (status === 8) {
+          return '退款中';
+        } else if (status === 9) {
+          return '已完成';
         } else {
           return '未知状态';
         }

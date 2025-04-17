@@ -141,7 +141,7 @@ export const asyncRouterMap = [
     component: Layout,
     redirect: '/oms/order',
     name: 'oms',
-    meta: {title: '订单', icon: 'order'},
+    meta: {title: '订单管理', icon: 'order'},
     children: [
       {
         path: 'order',
@@ -154,14 +154,14 @@ export const asyncRouterMap = [
         name: 'orderDetail',
         component: () => import('@/views/oms/order/orderDetail'),
         meta: {title: '订单详情'},
-        hidden:true
+        hidden: true
       },
       {
         path: 'deliverOrderList',
         name: 'deliverOrderList',
         component: () => import('@/views/oms/order/deliverOrderList'),
         meta: {title: '发货列表'},
-        hidden:true
+        hidden: true
       },
       {
         path: 'orderSetting',
@@ -173,7 +173,7 @@ export const asyncRouterMap = [
         path: 'returnApply',
         name: 'returnApply',
         component: () => import('@/views/oms/apply/index'),
-        meta: {title: '退货申请处理', icon: 'order-return'}
+        meta: {title: '售后申请处理', icon: 'order-return'}
       },
       {
         path: 'returnReason',
@@ -185,8 +185,14 @@ export const asyncRouterMap = [
         path: 'returnApplyDetail',
         name: 'returnApplyDetail',
         component: () => import('@/views/oms/apply/applyDetail'),
-        meta: {title: '退货原因详情'},
-        hidden:true
+        meta: {title: '售后详情'},
+        hidden: true
+      },
+      {
+        path: 'logAnalysis',
+        name: 'logAnalysis',
+        component: () => import('@/views/oms/apply/logAnalysis'),
+        meta: {title: '售后日志分析', icon: 'log-analysis'}
       }
     ]
   },
