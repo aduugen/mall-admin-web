@@ -194,12 +194,7 @@
                 <p>暂无统计数据</p>
               </div>
               <div v-else>
-                <ve-line
-                  :data="chartData"
-                  :loading="loading"
-                  :settings="chartSettings"
-                  :extend="chartExtend"
-                  height="400px"></ve-line>
+                <div ref="chartContainer" style="height: 400px;"></div>
               </div>
             </div>
           </el-col>
@@ -211,6 +206,7 @@
 
 <script>
   import {str2Date} from '@/utils/date';
+  import echarts from 'echarts/lib/echarts';
   import img_home_order from '@/assets/images/home_order.png';
   import img_home_today_amount from '@/assets/images/home_today_amount.png';
   import img_home_yesterday_amount from '@/assets/images/home_yesterday_amount.png';
@@ -328,6 +324,7 @@
         },
         loading: false,
         dataEmpty: false,
+        chartInstance: null,
         img_home_order,
         img_home_today_amount,
         img_home_yesterday_amount,
@@ -359,11 +356,40 @@
         totalVisitorCount: 0
       }
     },
+    computed: {
+      safeChartData() {
+        return {
+          columns: this.chartData.columns || ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
+          rows: Array.isArray(this.chartData.rows) ? this.chartData.rows : []
+        };
+      }
+    },
+    watch: {
+      safeChartData: {
+        handler() {
+          this.renderChart();
+        },
+        deep: true
+      },
+      loading(val) {
+        if (!val) {
+          this.$nextTick(() => {
+            this.renderChart();
+          });
+        }
+      }
+    },
     created(){
+      // 确保先初始化图表数据，避免undefined错误
+      this.chartData = {
+        columns: ['date', 'orderCount', 'orderAmount', 'memberCount', 'activeMemberCount', 'visitorCount'],
+        rows: []
+      };
+      
       // 优先初始化日期范围
       this.initOrderCountDate();
       
-      // 确保其他指标初始化
+      // 获取图表数据
       this.getData();
       
       // 分别请求各项数据
@@ -376,6 +402,17 @@
       this.fetchTodayNewMemberCount();
       this.fetchTodayVisitorStats();
       this.fetchTotalVisitorCount();
+    },
+    mounted() {
+      this.renderChart();
+      window.addEventListener('resize', this.handleResize);
+    },
+    beforeDestroy() {
+      if (this.chartInstance) {
+        this.chartInstance.dispose();
+        this.chartInstance = null;
+      }
+      window.removeEventListener('resize', this.handleResize);
     },
     methods:{
       // 各模块数据请求方法
@@ -463,6 +500,11 @@
         this.loading = true;
         this.dataEmpty = false;
         
+        // 确保rows存在，防止出现undefined错误
+        if (!this.chartData.rows) {
+          this.$set(this.chartData, 'rows', []);
+        }
+        
         try {
           // 格式化日期
           const startDate = this.formatDate(this.orderCountDate[0]);
@@ -503,6 +545,92 @@
         month = month < 10 ? '0' + month : month;
         day = day < 10 ? '0' + day : day;
         return `${year}-${month}-${day}`;
+      },
+      handleResize() {
+        if (this.chartInstance) {
+          this.chartInstance.resize();
+        }
+      },
+      renderChart() {
+        // 如果没有echarts实例，则创建一个
+        if (!this.chartInstance && this.$refs.chartContainer) {
+          this.chartInstance = echarts.init(this.$refs.chartContainer);
+        }
+        
+        if (!this.chartInstance) return;
+        
+        // 如果数据为空，不渲染
+        if (!this.safeChartData.rows || this.safeChartData.rows.length === 0 || this.dataEmpty) {
+          this.chartInstance.clear();
+          return;
+        }
+        
+        // 准备x轴数据
+        const xAxisData = this.safeChartData.rows.map(item => item.date);
+        
+        // 准备系列数据
+        const series = [];
+        const metrics = this.safeChartData.columns.slice(1); // 第一列是日期，其余是指标
+        
+        metrics.forEach(metric => {
+          const data = this.safeChartData.rows.map(item => item[metric]);
+          const seriesItem = {
+            name: this.chartSettings.labelMap[metric] || metric,
+            type: 'line',
+            data: data,
+            smooth: true
+          };
+          
+          // 判断是否需要使用右侧Y轴
+          if (this.chartSettings.axisSite && this.chartSettings.axisSite.right && 
+              this.chartSettings.axisSite.right.includes(metric)) {
+            seriesItem.yAxisIndex = 1;
+          }
+          
+          series.push(seriesItem);
+        });
+        
+        // 配置项
+        const option = {
+          color: this.chartExtend.color,
+          tooltip: {
+            trigger: 'axis'
+          },
+          legend: {
+            data: metrics.map(item => this.chartSettings.labelMap[item] || item),
+            textStyle: this.chartExtend.legend.textStyle
+          },
+          grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+          },
+          xAxis: {
+            type: 'category',
+            boundaryGap: false,
+            data: xAxisData,
+            axisLine: this.chartExtend.xAxis.axisLine,
+            splitLine: this.chartExtend.xAxis.splitLine
+          },
+          yAxis: [
+            {
+              type: 'value',
+              name: this.chartSettings.yAxisName[0] || '',
+              axisLine: this.chartExtend.yAxis.axisLine,
+              splitLine: this.chartExtend.yAxis.splitLine
+            },
+            {
+              type: 'value',
+              name: this.chartSettings.yAxisName[1] || '',
+              axisLine: this.chartExtend.yAxis.axisLine,
+              splitLine: this.chartExtend.yAxis.splitLine
+            }
+          ],
+          series: series
+        };
+        
+        this.chartInstance.setOption(option);
       }
     }
   }
