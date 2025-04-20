@@ -135,11 +135,6 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="退款金额" min-width="120" align="center">
-            <template slot-scope="scope">
-              <span class="refund-amount">￥{{calcTotalAmount(scope.row)}}</span>
-            </template>
-          </el-table-column>
           <el-table-column label="申请状态" min-width="120" align="center">
             <template slot-scope="scope">
               <el-tag :type="getStatusTagType(scope.row.status)">{{ scope.row.status | formatStatus }}</el-tag>
@@ -153,6 +148,11 @@
           <el-table-column label="处理人" min-width="120" align="center">
             <template slot-scope="scope">
               <span class="handle-man">{{scope.row.handleMan || '未处理'}}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="删除状态" min-width="120" align="center">
+            <template slot-scope="scope">
+              <span class="del-flag">{{scope.row.delFlag || 'false'}}</span>
             </template>
           </el-table-column>
           <el-table-column label="操作" min-width="150" align="center" fixed="right">
