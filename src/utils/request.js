@@ -53,6 +53,8 @@ service.interceptors.response.use(
   error => {
     console.log('err' + error)
     let message = '请求失败'
+    let handled = false
+    
     if (error.code === 'ECONNABORTED' && error.message.indexOf('timeout') !== -1) {
       message = '请求超时，请检查网络连接'
     } else if (error.response) {
@@ -68,6 +70,9 @@ service.interceptors.response.use(
           break
         case 404:
           message = '请求错误,未找到该资源'
+          // 防止重定向到错误页面导致重复请求
+          handled = true
+          console.error('404错误，资源不存在:', error.config.url)
           break
         case 500:
           message = '服务器端出错'
@@ -78,11 +83,15 @@ service.interceptors.response.use(
     } else {
       message = '连接到服务器失败'
     }
-    Message({
-      message: message,
-      type: 'error',
-      duration: 5 * 1000
-    })
+    
+    if (!handled) {
+      Message({
+        message: message,
+        type: 'error',
+        duration: 5 * 1000
+      })
+    }
+    
     return Promise.reject(error)
   }
 )

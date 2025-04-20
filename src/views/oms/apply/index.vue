@@ -365,13 +365,26 @@
         this.getList();
       },
       getList(){
-        this.listLoading=true;
+        if (this.listLoading) {
+          console.log('请求已在进行中，跳过重复请求');
+          return;
+        }
+        
+        this.listLoading = true;
         fetchList(this.listQuery).then(response => {
           this.listLoading = false;
-          this.list = response.data.list;
-          this.total = response.data.total;
-        }).catch(() => {
+          if (response && response.data) {
+            this.list = response.data.list;
+            this.total = response.data.total;
+            console.log('成功获取数据:', this.list);
+          } else {
+            this.$message.error('获取数据格式异常');
+            console.error('响应数据格式异常:', response);
+          }
+        }).catch(error => {
           this.listLoading = false;
+          this.$message.error('获取数据失败: ' + (error.message || '未知错误'));
+          console.error('获取数据失败:', error);
         });
       },
       calcTotalQuantity(row) {
@@ -381,10 +394,10 @@
         return row.afterSaleItemList.reduce((sum, item) => sum + (item.returnQuantity || 0), 0);
       },
       calcTotalAmount(row) {
-        if (!row.afterSaleItemList || row.afterSaleItemList.length === 0) {
+        if (!row.itemList || row.itemList.length === 0) {
           return '0.00';
         }
-        const total = row.afterSaleItemList.reduce((sum, item) => {
+        const total = row.itemList.reduce((sum, item) => {
           const price = item.productRealPrice || 0;
           const quantity = item.returnQuantity || 0;
           return sum + (price * quantity);

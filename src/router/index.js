@@ -400,9 +400,25 @@ export const asyncRouterMap = [
   {path: '*', redirect: '/404', hidden: true}
 ]
 
-export default new Router({
-  // mode: 'history', //后端支持可开
-  scrollBehavior: () => ({y: 0}),
+const createRouter = () => new Router({
+  // mode: 'history', // require service support
+  scrollBehavior: () => ({ y: 0 }),
   routes: constantRouterMap
 })
+
+const router = createRouter()
+
+// 添加全局路由错误处理
+router.onError((error) => {
+  console.error('路由错误:', error)
+  // 可以添加更多错误处理逻辑，例如导航到错误页面或显示错误消息
+})
+
+// 添加一个方法重置路由，以防需要
+export function resetRouter() {
+  const newRouter = createRouter()
+  router.matcher = newRouter.matcher // 重置路由器
+}
+
+export default router
 

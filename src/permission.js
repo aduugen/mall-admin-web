@@ -5,8 +5,26 @@ import 'nprogress/nprogress.css'// Progress 进度条样式
 import { Message } from 'element-ui'
 import { getToken } from '@/utils/auth' // 验权
 
-const whiteList = ['/login'] // 不重定向白名单
+// 防止循环重定向
+let redirectCount = 0;
+const MAX_REDIRECTS = 5;
+const whiteList = ['/login', '/404'] // 添加404到不重定向白名单
+
 router.beforeEach((to, from, next) => {
+  // 重置重定向计数器(如果不是从同一个页面重定向)
+  if (from.path !== to.path) {
+    redirectCount = 0;
+  } else {
+    // 检测潜在的重定向循环
+    redirectCount++;
+    if (redirectCount > MAX_REDIRECTS) {
+      console.error('检测到重定向循环:', from.path, '->', to.path);
+      redirectCount = 0;
+      next('/404'); // 强制跳转到404页面
+      return;
+    }
+  }
+
   NProgress.start()
   if (getToken()) {
     if (to.path === '/login') {
@@ -44,3 +62,9 @@ router.beforeEach((to, from, next) => {
 router.afterEach(() => {
   NProgress.done() // 结束Progress
 })
+
+// 添加全局错误处理以捕获路由错误
+window.addEventListener('error', function(event) {
+  console.error('全局错误:', event.error);
+  // 可以添加更多错误处理逻辑
+});

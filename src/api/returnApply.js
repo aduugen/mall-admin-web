@@ -2,12 +2,33 @@ import request from '@/utils/request'
 import { idempotentRequest } from '@/utils/idempotent'
 import { Message } from 'element-ui'
 
+// 添加防抖处理
+const pendingRequests = new Map();
+
 export function fetchList(params) {
-  return request({
+  // 创建唯一请求标识
+  const requestId = `fetchList_${JSON.stringify(params)}`;
+  
+  // 如果相同请求正在进行中，取消之前的请求
+  if (pendingRequests.has(requestId)) {
+    console.log('防止重复请求:', requestId);
+    return pendingRequests.get(requestId);
+  }
+  
+  // 发起请求并保存Promise
+  const requestPromise = request({
     url:'/afterSale/list',
     method:'get',
     params:params
-  })
+  }).finally(() => {
+    // 请求完成后从Map中移除
+    pendingRequests.delete(requestId);
+  });
+  
+  // 将请求保存到Map中
+  pendingRequests.set(requestId, requestPromise);
+  
+  return requestPromise;
 }
 
 export function deleteApply(params) {
