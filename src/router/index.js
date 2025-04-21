@@ -394,6 +394,26 @@ export const asyncRouterMap = [
         component: () => import('@/views/ums/member/orders'),
         meta: {title: '会员订单详情'},
         hidden: true
+      },
+      {
+        path: 'servicePoint',
+        name: 'servicePoint',
+        component: () => import('@/views/ums/servicePoint/index'),
+        meta: {title: '合作网点管理', icon: 'service-location'}
+      },
+      {
+        path: 'addServicePoint',
+        name: 'addServicePoint',
+        component: () => import('@/views/ums/servicePoint/add'),
+        meta: {title: '添加网点'},
+        hidden: true
+      },
+      {
+        path: 'updateServicePoint',
+        name: 'updateServicePoint',
+        component: () => import('@/views/ums/servicePoint/update'),
+        meta: {title: '修改网点'},
+        hidden: true
       }
     ]
   },
