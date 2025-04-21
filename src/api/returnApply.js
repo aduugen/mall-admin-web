@@ -75,7 +75,7 @@ export function updateApplyStatus(id, data) {
   });
 }
 
-export function getApplyDetail(id) {
+export function getAfterSaleApplyDetail(id) {
   if (!id || id <= 0) {
     Message.error('售后单ID无效');
     return Promise.reject(new Error('售后单ID无效'));

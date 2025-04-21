@@ -1,4 +1,4 @@
-import { updateApplyStatus, getApplyDetail } from '@/api/returnApply'
+import { updateApplyStatus, getAfterSaleApplyDetail } from '@/api/returnApply'
 import { Message, Loading } from 'element-ui'
 
 /**
@@ -124,7 +124,7 @@ export function loadAfterSaleDetail(id, successCallback, errorCallback, showLoad
     });
   }
   
-  return getApplyDetail(id)
+  return getAfterSaleApplyDetail(id)
     .then(response => {
       if (loadingInstance) loadingInstance.close();
       

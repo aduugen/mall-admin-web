@@ -336,12 +336,17 @@
         </div>
         
         <!-- 按钮区域 -->
-        <div class="action-buttons" v-show="orderReturnApply.status===0">
-          <el-button type="primary" size="small" icon="el-icon-check" @click="handleApprove">同意退货</el-button>
-          <el-button type="danger" size="small" icon="el-icon-close" @click="handleReject">拒绝退货</el-button>
-        </div>
-        <div class="action-buttons" v-show="orderReturnApply.status===1">
-          <el-button type="primary" size="small" icon="el-icon-check" @click="handleConfirmReceive">确认收货</el-button>
+        <div class="action-buttons" v-if="orderReturnApply.allowableOperations && orderReturnApply.allowableOperations.length > 0" v-loading="submitLoading">
+          <div class="button-container">
+            <el-button 
+              v-for="operation in orderReturnApply.allowableOperations" 
+              :key="operation"
+              :type="getOperationButtonType(operation)"
+              :icon="getOperationButtonIcon(operation)"
+              @click="handleOperation(operation)">
+              {{ getOperationButtonText(operation) }}
+            </el-button>
+          </div>
         </div>
         
         <!-- 打印按钮 -->
@@ -370,7 +375,7 @@
         <i class="el-icon-s-operation"></i>
         <span class="font-title-medium">处理流程</span>
       </div>
-      <el-steps :active="currentStep" finish-status="success" align-center>
+      <el-steps :active="computedCurrentStep" finish-status="success" align-center>
         <el-step title="申请提交" description="会员提交退货申请"></el-step>
         <el-step title="商家审核" description="商家审核退货申请"></el-step>
         <el-step title="商品寄回" description="会员寄回商品"></el-step>
@@ -379,47 +384,6 @@
         <el-step title="退款处理" description="系统处理退款"></el-step>
         <el-step title="完成" description="售后流程结束"></el-step>
       </el-steps>
-    </el-card>
-
-    <!-- 操作按钮 -->
-    <el-card class="action-buttons card-container" shadow="never" v-if="canOperate" v-loading="submitLoading">
-      <div slot="header" class="card-header">
-        <i class="el-icon-s-tools"></i>
-        <span class="font-title-medium">操作</span>
-      </div>
-      <div class="button-container">
-        <!-- 待处理状态的操作 -->
-        <div v-if="orderReturnApply.status === 0">
-          <el-button type="primary" @click="handleApprove">同意退货</el-button>
-          <el-button type="danger" @click="handleReject">拒绝退货</el-button>
-        </div>
-        
-        <!-- 已发货状态的操作 -->
-        <div v-if="orderReturnApply.status === 3">
-          <el-button type="primary" @click="handleConfirmReceive">确认收货</el-button>
-        </div>
-        
-        <!-- 已收货状态的操作 -->
-        <div v-if="orderReturnApply.status === 4">
-          <el-button type="primary" @click="handleQualityCheck">开始质检</el-button>
-        </div>
-        
-        <!-- 质检中状态的操作 -->
-        <div v-if="orderReturnApply.status === 5">
-          <el-button type="success" @click="handleQualityPass">质检通过</el-button>
-          <el-button type="danger" @click="handleQualityFail">质检不通过</el-button>
-        </div>
-        
-        <!-- 质检通过状态的操作 -->
-        <div v-if="orderReturnApply.status === 6">
-          <el-button type="primary" @click="handleRefund">确认退款</el-button>
-        </div>
-        
-        <!-- 退款中状态的操作 -->
-        <div v-if="orderReturnApply.status === 8">
-          <el-button type="success" @click="handleComplete">完成退款</el-button>
-        </div>
-      </div>
     </el-card>
 
     <!-- 物流信息 -->
@@ -550,7 +514,7 @@
   </div>
 </template>
 <script>
-  import {getApplyDetail,updateApplyStatus, getCompanyAddress} from '@/api/returnApply';
+  import {getAfterSaleApplyDetail,updateApplyStatus, getCompanyAddress} from '@/api/returnApply';
   import {fetchList} from '@/api/companyAddress';
   import {formatDate} from '@/utils/date';
   import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
@@ -632,7 +596,8 @@
     receiveMan: null,
     receiveTime: null,
     receiveNote: null,
-    orderTotalAmount: null
+    orderTotalAmount: null,
+    allowableOperations: []
   };
   export default {
     name: 'returnApplyDetail',
@@ -685,7 +650,7 @@
         }
         return address;
       },
-      currentStep() {
+      computedCurrentStep() {
         // 根据状态计算当前步骤
         const stepMap = {
           [STATUS.PENDING]: 1,    // 待处理
@@ -701,7 +666,7 @@
         };
         return stepMap[this.orderReturnApply.status] || 0;
       },
-      canOperate() {
+      isOperationAllowed() {
         // 根据状态判断是否可以操作
         const status = this.orderReturnApply.status;
         return [STATUS.PENDING, STATUS.SHIPPED, STATUS.RECEIVED, STATUS.CHECKING, STATUS.CHECK_PASS, STATUS.REFUNDING].includes(status);
@@ -739,21 +704,6 @@
           [STATUS.COMPLETED]: "已完成"
         };
         return statusMap[status] || "未知状态";
-      },
-      getStatusType(status) {
-        const statusTypeMap = {
-          [STATUS.PENDING]: 'warning',     // 待处理
-          [STATUS.APPROVED]: 'primary',    // 已同意
-          [STATUS.REJECTED]: 'danger',     // 已拒绝
-          [STATUS.SHIPPED]: 'info',        // 已发货
-          [STATUS.RECEIVED]: 'success',    // 已收货
-          [STATUS.CHECKING]: 'warning',    // 质检中
-          [STATUS.CHECK_PASS]: 'success',  // 质检通过
-          [STATUS.CHECK_FAIL]: 'danger',   // 质检不通过
-          [STATUS.REFUNDING]: 'primary',   // 退款中
-          [STATUS.COMPLETED]: 'success'    // 已完成
-        };
-        return statusTypeMap[status] || 'info';
       },
       formatTime(time) {
         if (time == null || time === '') {
@@ -839,7 +789,9 @@
           [OPERATION_TYPE.COMPLETE_REFUND]: 'success'
         };
         return colorMap[type] || '';
-      },
+      }
+    },
+    methods: {
       getOperationIcon(operateType) {
         const iconMap = {
           [OPERATION_TYPE.PENDING]: 'el-icon-time',
@@ -854,9 +806,55 @@
           [OPERATION_TYPE.COMPLETE_REFUND]: 'el-icon-circle-check'
         };
         return iconMap[operateType] || 'el-icon-more';
-      }
-    },
-    methods: {
+      },
+      getOperationButtonType(operation) {
+        const typeMap = {
+          'approve': 'primary',
+          'reject': 'danger',
+          'cancel': 'warning',
+          'receive': 'primary',
+          'check': 'primary',
+          'checkPass': 'success',
+          'checkFail': 'danger',
+          'recheck': 'warning',
+          'refund': 'primary',
+          'completeRefund': 'success',
+          'failRefund': 'danger'
+        };
+        return typeMap[operation] || 'default';
+      },
+      getOperationButtonText(operation) {
+        const textMap = {
+          'approve': '同意退货',
+          'reject': '拒绝退货',
+          'cancel': '取消申请',
+          'receive': '确认收货',
+          'check': '开始质检',
+          'checkPass': '质检通过',
+          'checkFail': '质检不通过',
+          'recheck': '重新质检',
+          'refund': '确认退款',
+          'completeRefund': '完成退款',
+          'failRefund': '退款失败'
+        };
+        return textMap[operation] || operation;
+      },
+      getOperationButtonIcon(operation) {
+        const iconMap = {
+          'approve': 'el-icon-check',
+          'reject': 'el-icon-close',
+          'cancel': 'el-icon-back',
+          'receive': 'el-icon-box',
+          'check': 'el-icon-search',
+          'checkPass': 'el-icon-circle-check',
+          'checkFail': 'el-icon-circle-close',
+          'recheck': 'el-icon-refresh',
+          'refund': 'el-icon-money',
+          'completeRefund': 'el-icon-check',
+          'failRefund': 'el-icon-close'
+        };
+        return iconMap[operation] || 'el-icon-s-tools';
+      },
       formatProductAttr(jsonAttr) {
         if (!jsonAttr || jsonAttr === '[]') return '';
         try {
@@ -939,10 +937,23 @@
           this.$router.push('/oms/apply');
           return;
         }
-        getApplyDetail(this.id).then(response => {
-          this.orderReturnApply = response.data;
-          // 计算当前步骤
-          this.setCurrentStep();
+        
+        getAfterSaleApplyDetail(this.id).then(response => {
+          this.orderReturnApply = response.data || {};
+          this.productList = this.orderReturnApply.itemList || [];
+          
+          // 如果后端未返回allowableOperations，则根据状态计算
+          if (!this.orderReturnApply.allowableOperations) {
+            this.orderReturnApply.allowableOperations = this.calculateAllowableOperations(this.orderReturnApply.status);
+          }
+          
+          // 处理默认值
+          if (this.orderReturnApply.returnAmount) {
+            this.updateStatusParam.returnAmount = this.orderReturnApply.returnAmount;
+          } else {
+            this.updateStatusParam.returnAmount = this.calculatedTotalAmount;
+          }
+          
           this.listLoading = false;
         }).catch(error => {
           this.listLoading = false;
@@ -994,8 +1005,8 @@
             return this.handleReject();
           case STATUS.SHIPPED: // 已发货
             this.$prompt('请输入物流公司', '提示', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+              confirmButtonText: '确定',
+              cancelButtonText: '取消',
               inputPlaceholder: '请输入物流公司',
               inputPattern: /\S+/,
               inputErrorMessage: '物流公司不能为空'
@@ -1066,7 +1077,7 @@
               confirmButtonText: '原路退回',
               cancelButtonText: '其他方式',
               type: 'info'
-        }).then(() => {
+            }).then(() => {
               params.refundType = 1; // 原路退回
               this.submitUpdateStatus(params);
             }).catch((action) => {
@@ -1095,6 +1106,11 @@
       },
       // 提交更新状态
       submitUpdateStatus(params) {
+        // 确保版本号传递正确
+        if (!params.version && this.orderReturnApply && this.orderReturnApply.version) {
+          params.version = this.orderReturnApply.version;
+        }
+        
         this.submitLoading = true;
         
         // 使用工具函数进行安全更新
@@ -1162,44 +1178,61 @@
       handlePrint() {
         window.print(); // 这是一个简单的打印实现，可以根据需要使用更复杂的打印库
       },
-      getRefundStatusType(status) {
-        const typeMap = {
-          0: 'warning',  // 处理中
-          1: 'success',  // 成功
-          2: 'danger'    // 失败
-        };
-        return typeMap[status] || 'info';
+      handleFailRefund() {
+        // 实现退款失败的逻辑
       },
-      formatRefundStatus(status) {
-        const statusMap = {
-          0: '处理中',
-          1: '已完成',
-          2: '失败'
-        };
-        return statusMap[status] || '未知状态';
+      calculateAllowableOperations(status) {
+        // 与后端 getAllowableOperations 保持一致的逻辑
+        const operations = [];
+        switch (status) {
+          case STATUS.PENDING: // 待处理
+            operations.push('approve', 'reject');
+            break;
+          case STATUS.APPROVED: // 已批准，等待顾客寄回商品
+            operations.push('cancel');
+            break;
+          case STATUS.SHIPPED: // 顾客已发货，等待商家收货
+            operations.push('receive');
+            break;
+          case STATUS.RECEIVED: // 商家已收货，准备质检
+            operations.push('check');
+            break;
+          case STATUS.CHECKING: // 质检中
+            operations.push('checkPass', 'checkFail');
+            break;
+          case STATUS.CHECK_PASS: // 质检通过，准备退款
+            operations.push('refund');
+            break;
+          case STATUS.CHECK_FAIL: // 质检未通过，等待顾客处理
+            operations.push('reject', 'recheck');
+            break;
+          case STATUS.REFUNDING: // 退款中
+            operations.push('completeRefund', 'failRefund');
+            break;
+        }
+        return operations;
       },
-      formatOperationType(type) {
-        if(type == null) return '未知操作';
-        
-        // 根据后端定义的操作类型映射显示名称
-        const typeMap = {
-          0: '处理中',
-          1: '同意申请',
-          2: '拒绝申请',
-          3: '确认发货',
-          4: '确认收货',
-          5: '开始质检',
-          6: '质检通过',
-          7: '质检不通过',
-          8: '发起退款',
-          9: '完成退款'
-        };
-        
-        return typeMap[type] || '未知操作';
+      handleOperation(operation) {
+        switch(operation) {
+          case 'approve': this.handleApprove(); break;
+          case 'reject': this.handleReject(); break;
+          case 'cancel': this.handleCancel(); break;
+          case 'receive': this.handleConfirmReceive(); break;
+          case 'check': this.handleQualityCheck(); break;
+          case 'checkPass': this.handleQualityPass(); break;
+          case 'checkFail': this.handleQualityFail(); break;
+          case 'recheck': this.handleRecheck(); break;
+          case 'refund': this.handleRefund(); break;
+          case 'completeRefund': this.handleComplete(); break;
+          case 'failRefund': this.handleFailRefund(); break;
+          default: this.$message.warning('未知操作类型: ' + operation);
+        }
       },
-      validateUpdateParams(params) {
-        // 使用工具函数进行验证
-        return validateStatusParams(params, params.status);
+      handleCancel() {
+        // 实现取消申请的逻辑
+      },
+      handleRecheck() {
+        // 实现重新质检的逻辑
       },
       setCurrentStep() {
         // 根据状态计算当前步骤
@@ -1216,6 +1249,25 @@
           9: 7  // 已完成
         };
         this.currentStep = stepMap[this.orderReturnApply.status] || 0;
+      },
+      validateUpdateParams(params) {
+        // 使用工具函数进行验证
+        return validateStatusParams(params, params.status);
+      },
+      getStatusType(status) {
+        const statusTypeMap = {
+          [STATUS.PENDING]: 'warning',     // 待处理
+          [STATUS.APPROVED]: 'primary',    // 已同意
+          [STATUS.REJECTED]: 'danger',     // 已拒绝
+          [STATUS.SHIPPED]: 'info',        // 已发货
+          [STATUS.RECEIVED]: 'success',    // 已收货
+          [STATUS.CHECKING]: 'warning',    // 质检中
+          [STATUS.CHECK_PASS]: 'success',  // 质检通过
+          [STATUS.CHECK_FAIL]: 'danger',   // 质检不通过
+          [STATUS.REFUNDING]: 'primary',   // 退款中
+          [STATUS.COMPLETED]: 'success'    // 已完成
+        };
+        return statusTypeMap[status] || 'info';
       }
     }
   }
