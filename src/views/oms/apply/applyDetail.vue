@@ -65,21 +65,22 @@
         </el-table-column>
         <el-table-column label="凭证图片" width="100" align="center">
           <template slot-scope="scope">
-            <div v-if="getProofPicsArray(scope.row.proofPics).length > 0">
+            <div v-if="proofList && proofList.length > 0">
               <div 
-                v-for="(picUrl, index) in getProofPicsArray(scope.row.proofPics)"
-                :key="index"
+                v-for="(pic, index) in proofList"
+                :key="pic.id || index"
                 class="proof-image-wrapper"
-                @mouseenter="handleImageHover(picUrl)"
+                @mouseenter="handleImageHover(pic.picUrl)"
                 @mouseleave="handleImageLeave"
               >
                 <img 
-                  :src="picUrl"
+                  :src="pic.picUrl"
                   style="width: 60px; height: 60px; margin: 2px; border-radius: 4px; object-fit: cover; cursor: pointer;" 
+                  @error="handleImageError($event)"
                 />
               </div>
-              <div v-if="getProofPicsArray(scope.row.proofPics).length > 1" class="font-extra-small color-info">
-                (共 {{ getProofPicsArray(scope.row.proofPics).length }} 张)
+              <div v-if="proofList.length > 1" class="font-extra-small color-info">
+                (共 {{ proofList.length }} 张)
               </div>
             </div>
             <span v-else>无</span>
@@ -606,6 +607,7 @@
         id: null,
         orderReturnApply: Object.assign({}, defaultOrderReturnApply),
         productList: null,
+        proofList: null,
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
         companyAddressList: [],
         previewVisible: false,
@@ -874,11 +876,53 @@
           return jsonAttr;
         }
       },
-      getProofPicsArray(picsStr) {
-        if (!picsStr || typeof picsStr !== 'string') {
-            return [];
+      getProofPicsArray(input) {
+        // 如果是数组，并且是对象数组（proofList的情况）
+        if (Array.isArray(input) && input.length > 0 && typeof input[0] === 'object') {
+          return input.map(item => item.picUrl);
         }
-        return picsStr.split(',').filter(pic => pic && pic.trim() !== '');
+        
+        if (!input || typeof input !== 'string') {
+          return [];
+        }
+        
+        let pics = input.split(',');
+        let picArray = [];
+        
+        // 添加调试日志
+        console.log('原始图片字符串:', input);
+        console.log('分割后图片数组:', pics);
+        
+        // 引入API基础URL
+        const baseUrl = 'http://192.168.1.6:8080';
+        console.log('基础URL:', baseUrl);
+        
+        for (let i = 0; i < pics.length; i++) {
+          let pic = pics[i].trim();
+          if (!pic) continue;
+          
+          // 添加调试日志
+          console.log('处理图片:', i, pic);
+          
+          // 确保图片路径是完整的URL
+          if (pic.startsWith('http://') || pic.startsWith('https://')) {
+            // 已经是完整URL
+            picArray.push(pic);
+            console.log('已是完整URL:', pic);
+          } else {
+            // 处理相对路径
+            if (pic.startsWith('/')) {
+              picArray.push(baseUrl + pic);
+              console.log('添加基础URL到以/开头的路径:', baseUrl + pic);
+            } else {
+              picArray.push(baseUrl + '/' + pic);
+              console.log('添加基础URL和/到路径:', baseUrl + '/' + pic);
+            }
+          }
+        }
+        
+        console.log('最终图片数组:', picArray);
+        return picArray;
       },
       handleImageHover(url) {
         if (this.previewTimer) {
@@ -940,7 +984,11 @@
         
         getAfterSaleApplyDetail(this.id).then(response => {
           this.orderReturnApply = response.data || {};
+          console.log('orderReturnApply', this.orderReturnApply);
           this.productList = this.orderReturnApply.itemList || [];
+          console.log('productList', this.productList);
+          this.proofList = this.orderReturnApply.proofList || [];
+          console.log('proofList', this.proofList);
           
           // 如果后端未返回allowableOperations，则根据状态计算
           if (!this.orderReturnApply.allowableOperations) {
@@ -1268,6 +1316,28 @@
           [STATUS.COMPLETED]: 'success'    // 已完成
         };
         return statusTypeMap[status] || 'info';
+      },
+      handleImageError($event) {
+        // 当图片加载失败时显示错误信息
+        const target = $event.target;
+        target.onerror = null; // 防止循环触发
+        target.style.display = 'none';
+        
+        const parent = target.parentNode;
+        if (parent) {
+          const errorText = document.createElement('div');
+          errorText.className = 'image-error-text';
+          errorText.textContent = '图片加载失败';
+          errorText.style.fontSize = '12px';
+          errorText.style.color = '#F56C6C';
+          errorText.style.textAlign = 'center';
+          errorText.style.lineHeight = '60px';
+          errorText.style.width = '60px';
+          errorText.style.height = '60px';
+          errorText.style.border = '1px dashed #d9d9d9';
+          errorText.style.borderRadius = '4px';
+          parent.appendChild(errorText);
+        }
       }
     }
   }
