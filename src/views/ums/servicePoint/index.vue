@@ -58,27 +58,27 @@
             </div>
             <div class="card-content">
               <div class="info-item">
-                <i class="el-icon-location"></i>
+                <span style="color: #409EFF; font-size: 24px; display: inline-block; width: 24px; text-align: center; margin-right: 4px;">⌂</span>
                 <span class="info-label">地址：</span>
                 <span class="info-value">{{item.locationAddress}}</span>
               </div>
               <div class="info-item">
-                <i class="el-icon-map-location"></i>
+                <span style="color: #409EFF; font-size: 24px; display: inline-block; width: 24px; text-align: center; margin-right: 4px;">◎</span>
                 <span class="info-label">坐标：</span>
                 <span class="info-value">{{item.locationLongitude}}, {{item.locationLatitude}}</span>
               </div>
               <div class="info-item">
-                <i class="el-icon-s-custom"></i>
+                <span style="color: #409EFF; font-size: 20px; display: inline-block; width: 20px; text-align: center; margin-right: 4px;">♂</span>
                 <span class="info-label">负责人：</span>
                 <span class="info-value">{{item.contactName || '未设置'}}</span>
               </div>
               <div class="info-item">
-                <i class="el-icon-phone"></i>
+                <span style="color: #409EFF; font-size: 20px; display: inline-block; width: 20px; text-align: center; margin-right: 4px;">☎</span>
                 <span class="info-label">电话：</span>
                 <span class="info-value">{{item.contactPhone || '未设置'}}</span>
               </div>
               <div class="info-item">
-                <i class="el-icon-medal"></i>
+                <span style="color: #409EFF; font-size: 20px; display: inline-block; width: 20px; text-align: center; margin-right: 4px;">■</span>
                 <span class="info-label">类型：</span>
                 <span class="info-value">
                   <el-tag size="mini" v-if="item.servicePointType === 0" type="primary">自提点</el-tag>
@@ -88,14 +88,14 @@
                 </span>
               </div>
               <div class="info-item">
-                <i class="el-icon-star-on"></i>
+                <span style="color: #409EFF; font-size: 20px; display: inline-block; width: 20px; text-align: center; margin-right: 4px;">★</span>
                 <span class="info-label">服务星级：</span>
                 <span class="info-value">
                   <el-rate v-model="item.serviceStarRating" disabled show-score text-color="#ff9900"></el-rate>
                 </span>
               </div>
               <div class="info-item">
-                <i class="el-icon-data-analysis"></i>
+                <span style="color: #409EFF; font-size: 20px; display: inline-block; width: 20px; text-align: center; margin-right: 4px;">⊞</span>
                 <span class="info-label">业务量：</span>
                 <span class="info-value">
                   <span class="count-item">自提: {{item.selfPickBillCount || 0}}</span>
