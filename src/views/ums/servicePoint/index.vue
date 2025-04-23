@@ -47,6 +47,10 @@
           <el-card class="service-point-card" shadow="always">
             <div slot="header" class="clearfix">
               <span class="point-name">{{item.locationName}}</span>
+              <div class="status-tag">
+                <el-tag v-if="item.servicePointStatus === 0" type="success" size="mini">正常</el-tag>
+                <el-tag v-else type="danger" size="mini">已关闭</el-tag>
+              </div>
               <div class="card-actions">
                 <el-button size="mini" type="text" icon="el-icon-edit" @click="handleUpdate(index, item)">编辑</el-button>
                 <el-button size="mini" type="text" icon="el-icon-delete" class="delete-btn" @click="handleDelete(index, item)">删除</el-button>
@@ -64,10 +68,66 @@
                 <span class="info-value">{{item.locationLongitude}}, {{item.locationLatitude}}</span>
               </div>
               <div class="info-item">
+                <i class="el-icon-s-custom"></i>
+                <span class="info-label">负责人：</span>
+                <span class="info-value">{{item.contactName || '未设置'}}</span>
+              </div>
+              <div class="info-item">
+                <i class="el-icon-phone"></i>
+                <span class="info-label">电话：</span>
+                <span class="info-value">{{item.contactPhone || '未设置'}}</span>
+              </div>
+              <div class="info-item">
+                <i class="el-icon-medal"></i>
+                <span class="info-label">类型：</span>
+                <span class="info-value">
+                  <el-tag size="mini" v-if="item.servicePointType === 0" type="primary">自提点</el-tag>
+                  <el-tag size="mini" v-else-if="item.servicePointType === 1" type="success">收货点</el-tag>
+                  <el-tag size="mini" v-else-if="item.servicePointType === 2" type="warning">综合点</el-tag>
+                  <span v-else>未设置</span>
+                </span>
+              </div>
+              <div class="info-item">
+                <i class="el-icon-star-on"></i>
+                <span class="info-label">服务星级：</span>
+                <span class="info-value">
+                  <el-rate v-model="item.serviceStarRating" disabled show-score text-color="#ff9900"></el-rate>
+                </span>
+              </div>
+              <div class="info-item">
+                <i class="el-icon-data-analysis"></i>
+                <span class="info-label">业务量：</span>
+                <span class="info-value">
+                  <span class="count-item">自提: {{item.selfPickBillCount || 0}}</span>
+                  <span class="count-item">收货: {{item.receiveBillCount || 0}}</span>
+                </span>
+              </div>
+              <div class="info-item">
+                <i class="el-icon-time"></i>
+                <span class="info-label">服务时间：</span>
+                <span class="info-value">
+                  <span v-if="item.serviceTimeType === 0">全天服务</span>
+                  <span v-else-if="item.serviceTimeType === 1 && item.serviceTimeList" 
+                       class="time-list-text" 
+                       @click="showTimeList(item.serviceTimeList)">查看服务时间</span>
+                  <span v-else>未设置</span>
+                </span>
+              </div>
+              <div class="info-item">
                 <i class="el-icon-info"></i>
                 <span class="info-label">ID：</span>
                 <span class="info-value">{{item.id}}</span>
               </div>
+            </div>
+            <div class="card-footer">
+              <el-switch
+                v-model="item.servicePointStatus"
+                :active-value="0"
+                :inactive-value="1"
+                active-text="启用"
+                inactive-text="停用"
+                @change="() => handleStatusChange(item)">
+              </el-switch>
             </div>
           </el-card>
         </el-col>
@@ -93,11 +153,23 @@
         :total="total">
       </el-pagination>
     </div>
+    
+    <!-- 服务时间弹窗 -->
+    <el-dialog title="服务时间段" :visible.sync="timeDialogVisible" width="30%">
+      <div v-if="timeListData && timeListData.length > 0">
+        <div v-for="(time, index) in timeListData" :key="index" class="time-item">
+          {{time.start}} - {{time.end}}
+        </div>
+      </div>
+      <div v-else class="no-time-data">
+        未设置服务时间或格式不正确
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
-  import {fetchList, deleteServicePoint} from '@/api/servicePoint';
+  import {fetchList, deleteServicePoint, updateServicePointStatus} from '@/api/servicePoint';
 
   export default {
     name: 'servicePointList',
@@ -110,7 +182,9 @@
           pageNum: 1,
           pageSize: 6,
           keyword: null
-        }
+        },
+        timeDialogVisible: false,
+        timeListData: []
       }
     },
     created() {
@@ -167,6 +241,38 @@
             this.getList();
           });
         });
+      },
+      // 显示服务时间列表
+      showTimeList(timeListStr) {
+        try {
+          this.timeListData = JSON.parse(timeListStr);
+          this.timeDialogVisible = true;
+        } catch (e) {
+          this.$message.error('时间格式不正确');
+          this.timeListData = [];
+          this.timeDialogVisible = true;
+        }
+      },
+      
+      // 处理网点状态变更
+      handleStatusChange(row) {
+        const statusText = row.servicePointStatus === 0 ? '启用' : '停用';
+        this.$confirm(`确定要${statusText}该网点吗?`, '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          updateServicePointStatus(row.id, row.servicePointStatus).then(response => {
+            this.$message({
+              message: `${statusText}成功`,
+              type: 'success',
+              duration: 1000
+            });
+            this.getList();
+          });
+        }).catch(() => {
+          row.servicePointStatus = row.servicePointStatus === 0 ? 1 : 0;
+        });
       }
     }
   }
@@ -220,6 +326,12 @@
       color: #303133;
     }
     
+    .status-tag {
+      display: inline-block;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+    
     .card-actions {
       float: right;
     }
@@ -247,14 +359,25 @@
         .info-label {
           font-weight: bold;
           margin-right: 5px;
-          min-width: 50px;
+          min-width: 70px;
         }
         
         .info-value {
-          word-break: break-all;
           flex: 1;
+          word-break: break-all;
+        }
+        
+        .count-item {
+          margin-right: 15px;
         }
       }
+    }
+    
+    .card-footer {
+      border-top: 1px solid #EBEEF5;
+      padding-top: 10px;
+      margin-top: 5px;
+      text-align: right;
     }
   }
   
@@ -279,5 +402,26 @@
       font-size: 14px;
       color: #909399;
     }
+  }
+  
+  .time-list-text {
+    color: #409EFF;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  
+  .time-item {
+    padding: 8px;
+    border-bottom: 1px solid #EBEEF5;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+  
+  .no-time-data {
+    text-align: center;
+    color: #909399;
+    padding: 20px 0;
   }
 </style>

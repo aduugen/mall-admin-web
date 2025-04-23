@@ -44,3 +44,44 @@ export function fetchAllServicePoint() {
     method: 'get'
   })
 }
+
+export function updateServicePointStatus(id, status) {
+  return request({
+    url: '/servicePoint/updateStatus',
+    method: 'post',
+    params: {
+      id,
+      status
+    }
+  })
+}
+
+export function getServicePointsByType(type) {
+  return request({
+    url: '/servicePoint/type/' + type,
+    method: 'get'
+  })
+}
+
+export function updateServicePointBillCount(id, selfPickCount, receiveCount) {
+  return request({
+    url: '/servicePoint/updateBillCount',
+    method: 'post',
+    params: {
+      id,
+      selfPickCount,
+      receiveCount
+    }
+  })
+}
+
+export function updateServicePointRating(id, rating) {
+  return request({
+    url: '/servicePoint/updateServiceRating',
+    method: 'post',
+    params: {
+      id,
+      rating
+    }
+  })
+}
