@@ -64,7 +64,7 @@
           </template>
         </el-table-column>
         <el-table-column label="凭证图片" width="100" align="center">
-          <template slot-scope="scope">
+          <template>
             <div v-if="proofList && proofList.length > 0">
               <div 
                 v-for="(pic, index) in proofList"
@@ -213,39 +213,52 @@
             <div class="address-card-content">
               <div class="address-select" v-show="orderReturnApply.status===0">
                 <span class="address-label">选择收货点：</span>
-                <el-select 
-                  size="small"
-                  style="width: 200px"
-                       :disabled="orderReturnApply.status!==0"
-                       v-model="updateStatusParam.companyAddressId">
-                  <el-option 
-                    v-for="address in companyAddressList"
-                         :key="address.id"
-                         :value="address.id"
-                         :label="address.addressName">
-              </el-option>
-            </el-select>
-        </div>
+                <ServicePointSelect
+                  v-model="updateStatusParam.servicePointId"
+                  @change="handleServicePointChange"
+                  :disabled="orderReturnApply.status!==0"
+                  style="width: 300px"
+                />
+              </div>
               
-              <div class="address-info">
+              <div class="address-info" v-if="selectedServicePoint">
                 <div class="address-item">
-                  <span class="address-info-label">收货人：</span>
-                  <span class="address-info-value">{{currentAddress ? currentAddress.name : '加载中...'}}</span>
-      </div>
-                <div class="address-item">
-                  <span class="address-info-label">所在地区：</span>
-                  <span class="address-info-value">{{currentAddress | formatRegion}}</span>
-      </div>
+                  <span class="address-info-label">收货点名称：</span>
+                  <span class="address-info-value">{{selectedServicePoint.locationName}}</span>
+                </div>
                 <div class="address-item">
                   <span class="address-info-label">详细地址：</span>
-                  <span class="address-info-value">{{currentAddress ? currentAddress.detailAddress : '加载中...'}}</span>
-      </div>
-                <div class="address-item">
+                  <span class="address-info-value">{{selectedServicePoint.locationAddress}}</span>
+                </div>
+                <div class="address-item" v-if="selectedServicePoint.contactName">
+                  <span class="address-info-label">负责人：</span>
+                  <span class="address-info-value">{{selectedServicePoint.contactName}}</span>
+                </div>
+                <div class="address-item" v-if="selectedServicePoint.contactPhone">
                   <span class="address-info-label">联系电话：</span>
-                  <span class="address-info-value">{{currentAddress ? currentAddress.phone : '加载中...'}}</span>
-      </div>
-      </div>
-      </div>
+                  <span class="address-info-value">{{selectedServicePoint.contactPhone}}</span>
+                </div>
+                <div class="address-item" v-if="selectedServicePoint.servicePointType !== null">
+                  <span class="address-info-label">网点类型：</span>
+                  <span class="address-info-value">
+                    <el-tag size="mini" v-if="selectedServicePoint.servicePointType === 1" type="success">收货点</el-tag>
+                    <el-tag size="mini" v-if="selectedServicePoint.servicePointType === 2" type="warning">综合点</el-tag>
+                  </span>
+                </div>
+              </div>
+              
+              <div class="address-info" v-else-if="orderReturnApply.servicePointId && orderReturnApply.servicePointName">
+                <div class="address-item">
+                  <span class="address-info-label">收货点：</span>
+                  <span class="address-info-value">{{orderReturnApply.servicePointName}}</span>
+                </div>
+              </div>
+              <div class="address-info" v-else>
+                <div class="address-item">
+                  <span class="address-info-value">暂无收货信息</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -412,6 +425,9 @@
         <el-form-item label="收货备注" v-if="orderReturnApply.receiveNote">
           <span>{{orderReturnApply.receiveNote}}</span>
         </el-form-item>
+        <el-form-item label="收货网点" v-if="orderReturnApply.servicePointId">
+          <span>{{orderReturnApply.servicePointName || '无'}}</span>
+        </el-form-item>
       </el-form>
     </el-card>
 
@@ -512,6 +528,40 @@
         </el-timeline-item>
       </el-timeline>
     </el-card>
+
+    <div v-if="orderReturnApply.status === 1 && orderReturnApply.reason">
+      <el-card class="reason-card card-container" shadow="never">
+        <div slot="header" class="card-header">
+          <i class="el-icon-document"></i>
+          <span class="font-title-medium">退货原因</span>
+        </div>
+        <div class="reason-content">
+          {{orderReturnApply.reason}}
+        </div>
+      </el-card>
+    </div>
+
+    <!-- 申请图片展示 -->
+    <div class="proof-pics-wrapper" v-if="proofList && proofList.length > 0" ref="proofPicsWrapper">
+      <el-card class="proof-pics-card card-container" shadow="never">
+        <div slot="header" class="card-header">
+          <i class="el-icon-picture"></i>
+          <span class="font-title-medium">申请凭证</span>
+        </div>
+        <div class="proof-pics-list">
+          <div v-for="(item, index) in proofList" :key="'proof_' + index" class="pic-item">
+            <div class="pic-wrapper" @mouseenter="handleImageHover(item.picUrl)" @mouseleave="handleImageLeave">
+              <img :src="item.picUrl" @error="handleImageError" class="proof-pic">
+            </div>
+            <div class="pic-time" v-if="item.createTime">{{item.createTime | formatTime}}</div>
+            <div class="pic-desc" v-if="item.description">{{item.description}}</div>
+          </div>
+        </div>
+      </el-card>
+      <div v-if="previewVisible" class="preview-mask" @click="handleMaskClick" @mouseenter="handleMaskEnter" @mouseleave="handleMaskLeave">
+        <img :src="previewImage" class="preview-image">
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -519,6 +569,8 @@
   import {fetchList} from '@/api/companyAddress';
   import {formatDate} from '@/utils/date';
   import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
+  import ServicePointSelect from '@/components/ServicePointSelect';
+  import Vue from 'vue';
 
   // 状态常量定义
   const STATUS = {
@@ -575,7 +627,9 @@
     receiveMan: 'admin',
     receiveNote: null,
     returnAmount: 0,
-    status: 0
+    status: 0,
+    servicePointId: null,
+    servicePointName: null
   };
   const defaultOrderReturnApply = {
     id: null,
@@ -602,6 +656,9 @@
   };
   export default {
     name: 'returnApplyDetail',
+    components: {
+      ServicePointSelect
+    },
     data() {
       return {
         id: null,
@@ -610,6 +667,7 @@
         proofList: null,
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
         companyAddressList: [],
+        selectedServicePoint: null, // 存储选中的服务点信息
         previewVisible: false,
         previewImage: '',
         previewTimer: null,
@@ -627,6 +685,9 @@
     created() {
       this.id = this.$route.query.id;
       this.getDetail();
+      
+      // 添加ServicePointSelect组件到Vue原型，用于动态创建组件
+      this.$ServicePointSelect = Vue.extend(ServicePointSelect);
     },
     computed: {
       calculatedTotalAmount() {
@@ -1002,6 +1063,23 @@
             this.updateStatusParam.returnAmount = this.calculatedTotalAmount;
           }
           
+          // 处理服务点信息
+          if (this.orderReturnApply.servicePointId) {
+            this.updateStatusParam.servicePointId = this.orderReturnApply.servicePointId;
+            this.updateStatusParam.servicePointName = this.orderReturnApply.servicePointName;
+            
+            // 尝试获取服务点详情
+            import('@/api/servicePoint').then(module => {
+              module.getServicePoint(this.orderReturnApply.servicePointId).then(response => {
+                if (response.data) {
+                  this.selectedServicePoint = response.data;
+                }
+              }).catch(() => {
+                console.log('获取服务点详情失败');
+              });
+            });
+          }
+          
           this.listLoading = false;
         }).catch(error => {
           this.listLoading = false;
@@ -1159,6 +1237,11 @@
           params.version = this.orderReturnApply.version;
         }
         
+        // 确保servicePointId/Name有值，并且相互匹配
+        if (params.servicePointId && !params.servicePointName && this.selectedServicePoint) {
+          params.servicePointName = this.selectedServicePoint.locationName;
+        }
+        
         this.submitLoading = true;
         
         // 使用工具函数进行安全更新
@@ -1196,17 +1279,87 @@
         });
       },
       handleConfirmReceive() {
-        this.$prompt('请输入收货备注', '提示', {
-          confirmButtonText: '确定',
+        // 创建一个Dialog表单
+        this.$msgbox({
+          title: '确认收货',
+          message: this.createReceiveForm(),
+          showCancelButton: true,
+          confirmButtonText: '确认',
           cancelButtonText: '取消',
-          inputPlaceholder: '请输入收货备注（可选）'
-        }).then(({ value }) => {
-          let params = Object.assign({}, this.updateStatusParam);
-          params.receiveMan = this.$store.getters.name || 'admin';
-          params.receiveNote = value;
-          params.status = 4; // 已收货
-          this.submitUpdateStatus(params);
+          beforeClose: (action, instance, done) => {
+            if (action === 'confirm') {
+              const servicePointId = this.$refs.receiveServicePoint && this.$refs.receiveServicePoint.selectedValue;
+              const receiveNote = this.$refs.receiveNote && this.$refs.receiveNote.value;
+              
+              if (!servicePointId) {
+                this.$message({
+                  type: 'warning',
+                  message: '请选择收货网点'
+                });
+                return;
+              }
+              
+              // 获取服务点详情
+              const selectedPoint = this.$refs.receiveServicePoint && 
+                this.$refs.receiveServicePoint.options.find(item => item.id === servicePointId);
+              
+              let params = Object.assign({}, this.updateStatusParam);
+              params.receiveMan = this.$store.getters.name || 'admin';
+              params.receiveNote = receiveNote;
+              params.servicePointId = servicePointId;
+              params.servicePointName = selectedPoint ? selectedPoint.locationName : '';
+              params.status = 4; // 已收货
+              
+              this.submitUpdateStatus(params);
+              done();
+            } else {
+              done();
+            }
+          }
         });
+      },
+      createReceiveForm() {
+        // 创建服务点选择器和备注输入框
+        const h = this.$createElement;
+        
+        setTimeout(() => {
+          // 在下一个事件循环中初始化Vue组件
+          this.$refs.receiveServicePoint = new this.$ServicePointSelect({
+            propsData: {
+              value: this.updateStatusParam.servicePointId || null
+            }
+          }).$mount('#receive-service-point');
+        }, 0);
+        
+        return h('div', { class: 'receive-form' }, [
+          h('div', { class: 'form-item' }, [
+            h('label', { class: 'form-label' }, '选择收货网点:'),
+            h('div', { class: 'form-content' }, [
+              h('div', { 
+                attrs: { id: 'receive-service-point' },
+                style: { width: '100%' }
+              })
+            ])
+          ]),
+          h('div', { class: 'form-item' }, [
+            h('label', { class: 'form-label' }, '收货备注:'),
+            h('div', { class: 'form-content' }, [
+              h('textarea', {
+                ref: 'receiveNote',
+                attrs: { 
+                  placeholder: '请输入收货备注（可选）',
+                  rows: 3
+                },
+                style: {
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #DCDFE6'
+                }
+              })
+            ])
+          ])
+        ]);
       },
       handleQualityCheck() {
         this.handleUpdateStatus(5); // 质检中
@@ -1337,6 +1490,15 @@
           errorText.style.border = '1px dashed #d9d9d9';
           errorText.style.borderRadius = '4px';
           parent.appendChild(errorText);
+        }
+      },
+      handleServicePointChange(point) {
+        // 当选择服务点时，接收完整的服务点对象
+        this.selectedServicePoint = point;
+        if (point) {
+          // 更新updateStatusParam中的服务点信息
+          this.updateStatusParam.servicePointId = point.id;
+          this.updateStatusParam.servicePointName = point.locationName;
         }
       }
     }
@@ -1907,6 +2069,123 @@
       break-inside: avoid;
       page-break-inside: avoid;
     }
+  }
+
+  /* 收货表单样式 */
+  .receive-form {
+    width: 100%;
+  }
+  
+  .form-item {
+    margin-bottom: 15px;
+  }
+  
+  .form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #606266;
+  }
+  
+  .form-content {
+    width: 100%;
+  }
+  
+  /* 修复scope定义但未使用的错误 */
+  .scope-fix {
+    display: none;
+  }
+
+  .reason-card {
+    margin-top: 20px;
+  }
+
+  .reason-content {
+    padding: 15px;
+    background-color: #fff;
+    border-radius: 4px;
+    border: 1px solid #ebeef5;
+  }
+
+  .proof-pics-card {
+    margin-top: 20px;
+  }
+
+  .proof-pics-list {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px;
+  }
+
+  .pic-item {
+    flex: 1;
+    min-width: 250px;
+    margin: 0 10px 20px 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+    background-color: #fff;
+  }
+
+  .pic-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+
+  .pic-wrapper img {
+    display: block;
+    border: 1px solid #ebeef5;
+    transition: all 0.3s;
+  }
+
+  .pic-wrapper img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  .pic-time {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 5px;
+    text-align: center;
+  }
+
+  .pic-desc {
+    font-size: 12px;
+    color: #606266;
+    margin-top: 5px;
+    text-align: center;
+  }
+
+  .proof-pic {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+  }
+
+  .preview-mask {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .preview-image {
+    max-width: 80%;
+    max-height: 80%;
+    border: 5px solid white;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   }
 </style>
 

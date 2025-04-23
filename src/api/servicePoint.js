@@ -85,3 +85,14 @@ export function updateServicePointRating(id, rating) {
     }
   })
 }
+
+export function searchReceivePoints(keyword) {
+  return request({
+    url: '/servicePoint/searchReceivePoints',
+    method: 'get',
+    params: {
+      keyword: keyword,
+      status: 0 // 只查询正常状态的网点
+    }
+  })
+}
