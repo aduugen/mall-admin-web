@@ -62,7 +62,7 @@
                 <span class="info-label">地址：</span>
                 <span class="info-value">{{item.locationAddress}}</span>
               </div>
-              <div class="info-item">
+              <div class="info-item" @click="showMap(item)" style="cursor: pointer;">
                 <span style="color: #409EFF; font-size: 24px; display: inline-block; width: 24px; text-align: center; margin-right: 4px;">◎</span>
                 <span class="info-label">坐标：</span>
                 <span class="info-value">{{item.locationLongitude}}, {{item.locationLatitude}}</span>
@@ -165,6 +165,11 @@
         未设置服务时间或格式不正确
       </div>
     </el-dialog>
+    
+    <!-- 地图弹窗 -->
+    <el-dialog title="网点位置" :visible.sync="mapDialogVisible" width="70%">
+      <div id="mapContainer" style="width: 100%; height: 500px;"></div>
+    </el-dialog>
   </div>
 </template>
 
@@ -184,7 +189,10 @@
           keyword: null
         },
         timeDialogVisible: false,
-        timeListData: []
+        timeListData: [],
+        mapDialogVisible: false,
+        currentPoint: null,
+        map: null
       }
     },
     created() {
@@ -273,6 +281,63 @@
         }).catch(() => {
           row.servicePointStatus = row.servicePointStatus === 0 ? 1 : 0;
         });
+      },
+      
+      // 显示地图
+      showMap(item) {
+        this.currentPoint = item;
+        this.mapDialogVisible = true;
+        
+        // 在Dialog打开后初始化地图
+        this.$nextTick(() => {
+          this.initMap();
+        });
+      },
+      
+      // 初始化地图
+      initMap() {
+        // 确保地图容器元素存在
+        const mapContainer = document.getElementById('mapContainer');
+        if (!mapContainer) return;
+        
+        // 清空地图容器，防止重复初始化
+        mapContainer.innerHTML = '';
+        
+        // 检查是否有高德地图API
+        if (typeof AMap !== 'undefined') {
+          // 初始化地图
+          this.map = new AMap.Map('mapContainer', {
+            resizeEnable: true,
+            zoom: 15,
+            center: [this.currentPoint.locationLongitude, this.currentPoint.locationLatitude]
+          });
+          
+          // 在地图上添加标记
+          const marker = new AMap.Marker({
+            position: [this.currentPoint.locationLongitude, this.currentPoint.locationLatitude],
+            title: this.currentPoint.locationName
+          });
+          
+          // 将标记添加到地图
+          this.map.add(marker);
+          
+          // 添加信息窗体
+          const infoWindow = new AMap.InfoWindow({
+            content: `<div>
+                        <h3>${this.currentPoint.locationName}</h3>
+                        <p>${this.currentPoint.locationAddress}</p>
+                        <p>联系人: ${this.currentPoint.contactName || '未设置'}</p>
+                        <p>电话: ${this.currentPoint.contactPhone || '未设置'}</p>
+                      </div>`,
+            offset: new AMap.Pixel(0, -30)
+          });
+          
+          // 在标记上打开信息窗体
+          infoWindow.open(this.map, marker.getPosition());
+          
+        } else {
+          this.$message.error('高德地图API未加载，请确保正确引入');
+        }
       }
     }
   }
