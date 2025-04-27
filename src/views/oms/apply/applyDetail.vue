@@ -540,28 +540,6 @@
         </div>
       </el-card>
     </div>
-
-    <!-- 申请图片展示 -->
-    <div class="proof-pics-wrapper" v-if="proofList && proofList.length > 0" ref="proofPicsWrapper">
-      <el-card class="proof-pics-card card-container" shadow="never">
-        <div slot="header" class="card-header">
-          <i class="el-icon-picture"></i>
-          <span class="font-title-medium">申请凭证</span>
-        </div>
-        <div class="proof-pics-list">
-          <div v-for="(item, index) in proofList" :key="'proof_' + index" class="pic-item">
-            <div class="pic-wrapper" @mouseenter="handleImageHover(item.picUrl)" @mouseleave="handleImageLeave">
-              <img :src="item.picUrl" @error="handleImageError" class="proof-pic">
-            </div>
-            <div class="pic-time" v-if="item.createTime">{{item.createTime | formatTime}}</div>
-            <div class="pic-desc" v-if="item.description">{{item.description}}</div>
-          </div>
-        </div>
-      </el-card>
-      <div v-if="previewVisible" class="preview-mask" @click="handleMaskClick" @mouseenter="handleMaskEnter" @mouseleave="handleMaskLeave">
-        <img :src="previewImage" class="preview-image">
-      </div>
-    </div>
   </div>
 </template>
 <script>
@@ -1626,6 +1604,16 @@
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
     background-color: #fff;
+    transition: all 0.3s;
+  }
+  
+  .refund-card:hover,
+  .address-card:hover,
+  .process-card:hover,
+  .receive-card:hover,
+  .remark-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
   }
   
   .refund-card-title,
