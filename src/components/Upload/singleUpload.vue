@@ -2,14 +2,16 @@
   <div>
     <el-upload
       :action="useOss?ossUploadUrl:minioUploadUrl"
-      :data="useOss?dataObj:null"
+      :data="useOss?dataObj:minioData"
       list-type="picture"
       :multiple="false" :show-file-list="showFileList"
       :file-list="fileList"
       :before-upload="beforeUpload"
       :on-remove="handleRemove"
       :on-success="handleUploadSuccess"
-      :on-preview="handlePreview">
+      :on-preview="handlePreview"
+      name="file"
+      :headers="headers">
       <el-button size="small" type="primary">点击上传</el-button>
       <div slot="tip" class="el-upload__tip">只能上传jpg/png文件，且不超过10MB</div>
     </el-upload>
@@ -20,6 +22,8 @@
 </template>
 <script>
   import {policy} from '@/api/oss'
+  import Cookies from 'js-cookie'
+  import {getToken} from '@/utils/auth'
 
   export default {
     name: 'singleUpload',
@@ -62,10 +66,19 @@
           host: '',
           // callback:'',
         },
+        minioData: {
+          // MinIO上传需要的参数
+          accessKey: 'miniodev',
+          secretKey: 'miniodev',
+          bucket: 'mall'
+        },
         dialogVisible: false,
         useOss:false, //使用oss->true;使用MinIO->false
         ossUploadUrl:'http://macro-oss.oss-cn-shenzhen.aliyuncs.com',
-        minioUploadUrl:'http://localhost:8080/minio/upload',
+        minioUploadUrl:'http://192.168.1.6:9000/mall/upload',
+        headers: {
+          Authorization: getToken()
+        }
       };
     },
     methods: {

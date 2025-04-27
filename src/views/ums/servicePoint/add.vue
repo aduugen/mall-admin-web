@@ -38,7 +38,7 @@
         <el-form-item label="网点图片：">
           <el-upload
             class="avatar-uploader"
-            action="/minio/upload"
+            :action="'http://192.168.1.6:8080/minio/upload'"
             :headers="headers"
             :show-file-list="false"
             :on-success="handlePicSuccess"
@@ -105,6 +105,7 @@
   
   <script>
     import {createServicePoint} from '@/api/servicePoint';
+    import {getToken} from '@/utils/auth';
     
     export default {
       name: "addServicePoint",
@@ -161,7 +162,7 @@
           marker: null,
           imageUrl: '',
           headers: {
-            Authorization: localStorage.getItem('token')
+            Authorization: getToken()
           },
           timeRanges: [{ start: null, end: null }]
         }
