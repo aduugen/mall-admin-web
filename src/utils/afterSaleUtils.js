@@ -202,7 +202,7 @@ export function validateStatusParams(params, targetStatus) {
   // 针对不同状态的特定验证
   switch (params.status) {
     case STATUS.APPROVED: // 同意申请
-      if (!params.companyAddressId) {
+      if (!params.servicePointId) {
         Message.warning('请选择收货地址');
         return false;
       }

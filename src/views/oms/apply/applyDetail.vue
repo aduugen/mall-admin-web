@@ -223,6 +223,10 @@
               
               <div class="address-info" v-if="selectedServicePoint">
                 <div class="address-item">
+                  <span class="address-info-label">网点ID：</span>
+                  <span class="address-info-value">{{selectedServicePoint.id}}</span>
+                </div>
+                <div class="address-item">
                   <span class="address-info-label">收货点名称：</span>
                   <span class="address-info-value">{{selectedServicePoint.locationName}}</span>
                 </div>
@@ -599,7 +603,7 @@
 
   // 默认参数
   const defaultUpdateStatusParam = {
-    companyAddressId: null,
+    servicePointId: null,
     handleMan: 'admin',
     handleNote: null,
     receiveMan: 'admin',
@@ -612,7 +616,7 @@
   const defaultOrderReturnApply = {
     id: null,
     orderId: null,
-    companyAddressId: null,
+    servicePointId: null,
     orderSn: null,
     createTime: null,
     memberUsername: null,
@@ -678,18 +682,6 @@
           return sum + (price * quantity);
         }, 0);
         return total;
-      },
-      currentAddress() {
-        let id = this.updateStatusParam.companyAddressId;
-        let address = null;
-        if(this.companyAddressList==null||this.companyAddressList.length===0) return address;
-        for(let i=0;i<this.companyAddressList.length;i++){
-          if(this.companyAddressList[i].id===id){
-            address=this.companyAddressList[i];
-            break;
-          }
-        }
-        return address;
       },
       computedCurrentStep() {
         // 根据状态计算当前步骤
@@ -1043,8 +1035,8 @@
           
           // 处理服务点信息
           if (this.orderReturnApply.servicePointId) {
-            this.updateStatusParam.servicePointId = this.orderReturnApply.servicePointId;
-            this.updateStatusParam.servicePointName = this.orderReturnApply.servicePointName;
+            this.updateStatusParam.servicePointId = this.orderReturnApply.id;
+            this.updateStatusParam.servicePointName = this.orderReturnApply.locationName;
             
             // 尝试获取服务点详情
             import('@/api/servicePoint').then(module => {
@@ -1076,9 +1068,9 @@
             this.$message.warning('没有可用的公司地址，请先添加收货地址');
           }
           
-          if(this.companyAddressList.length > 0 && !this.updateStatusParam.companyAddressId){
+          if(this.companyAddressList.length > 0 && !this.updateStatusParam.servicePointId){
             let defaultAddress = this.companyAddressList.find(addr => addr.receiveStatus === 1);
-            this.updateStatusParam.companyAddressId = defaultAddress ? defaultAddress.id : this.companyAddressList[0].id;
+            this.updateStatusParam.servicePointId = defaultAddress ? defaultAddress.id : this.companyAddressList[0].id;
           }
         }).catch(error => {
           console.error("获取公司地址列表失败:", error);
@@ -1095,7 +1087,7 @@
         // 根据状态处理不同的参数
         switch(status) {
           case STATUS.APPROVED: // 已同意
-            if(!params.companyAddressId) {
+            if(this.selectedServicePoint == null) {
               this.$message({
                 message: '请选择收货地址',
                 type: 'warning',
@@ -1103,6 +1095,7 @@
               });
               return;
             }
+            params.servicePointId = this.selectedServicePoint.id;
             params.handleMan = this.$store.getters.name || 'admin';
             break;
           case STATUS.REJECTED: // 已拒绝 - 不应该直接调用，应该使用handleReject方法
@@ -1211,7 +1204,7 @@
       // 提交更新状态
       submitUpdateStatus(params) {
         // 确保版本号传递正确
-        if (!params.version && this.orderReturnApply && this.orderReturnApply.version) {
+        if (!params.version && this.orderReturnApply) {
           params.version = this.orderReturnApply.version;
         }
         
