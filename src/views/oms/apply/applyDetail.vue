@@ -888,7 +888,6 @@
         const typeMap = {
           'approve': 'primary',
           'reject': 'danger',
-          'cancel': 'warning',
           'receive': 'primary',
           'check': 'primary',
           'checkPass': 'success',
@@ -904,7 +903,6 @@
         const textMap = {
           'approve': '同意退货',
           'reject': '拒绝退货',
-          'cancel': '取消申请',
           'receive': '确认收货',
           'check': '开始质检',
           'checkPass': '质检通过',
@@ -920,7 +918,6 @@
         const iconMap = {
           'approve': 'el-icon-check',
           'reject': 'el-icon-close',
-          'cancel': 'el-icon-back',
           'receive': 'el-icon-box',
           'check': 'el-icon-search',
           'checkPass': 'el-icon-circle-check',
@@ -1222,10 +1219,9 @@
               params.refundType = 1; // 原路退回
               this.submitUpdateStatus(params);
             }).catch((action) => {
-              if (action === 'cancel') {
-                params.refundType = 2; // 其他方式
-                this.submitUpdateStatus(params);
-              }
+              // 无论什么action，都视为选择其他方式
+              params.refundType = 2; // 其他方式
+              this.submitUpdateStatus(params);
             });
             return;
           case 9: // 已完成
@@ -1405,7 +1401,7 @@
             operations.push('approve', 'reject');
             break;
           case STATUS.APPROVED: // 已批准，等待顾客寄回商品
-            operations.push('cancel');
+            // 移除了取消申请功能
             break;
           case STATUS.SHIPPED: // 顾客已发货，等待商家收货
             operations.push('receive');
@@ -1432,7 +1428,6 @@
         switch(operation) {
           case 'approve': this.handleApprove(); break;
           case 'reject': this.handleReject(); break;
-          case 'cancel': this.handleCancel(); break;
           case 'receive': this.handleConfirmReceive(); break;
           case 'check': this.handleQualityCheck(); break;
           case 'checkPass': this.handleQualityPass(); break;
@@ -1443,9 +1438,6 @@
           case 'failRefund': this.handleFailRefund(); break;
           default: this.$message.warning('未知操作类型: ' + operation);
         }
-      },
-      handleCancel() {
-        // 实现取消申请的逻辑
       },
       handleRecheck() {
         // 实现重新质检的逻辑
