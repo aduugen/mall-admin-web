@@ -102,6 +102,16 @@
       <div class="card-header">
         <i class="el-icon-document"></i>
         <span class="font-title-medium">售后单信息</span>
+        
+        <!-- 添加回退审核按钮 -->
+        <el-button 
+          v-if="canRollback"
+          type="warning" 
+          size="small" 
+          class="float-right"
+          @click="handleRollback">
+          回退审核
+        </el-button>
       </div>
       
       <!-- 售后单基本信息 -->
@@ -544,10 +554,31 @@
         </div>
       </el-card>
     </div>
+    
+    <!-- 回退审核对话框 -->
+    <el-dialog
+      title="回退到待审核状态"
+      :visible.sync="rollbackDialogVisible"
+      width="30%">
+      <el-form :model="rollbackForm" ref="rollbackForm" label-width="120px">
+        <el-form-item label="回退原因" prop="reason" :rules="[{required: true, message: '请输入回退原因', trigger: 'blur'}]">
+          <el-input
+            type="textarea"
+            :rows="4"
+            placeholder="请输入回退原因"
+            v-model="rollbackForm.reason">
+          </el-input>
+        </el-form-item>
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="rollbackDialogVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="rollbackLoading" @click="confirmRollback">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 <script>
-  import {getAfterSaleApplyDetail,updateApplyStatus, getCompanyAddress} from '@/api/returnApply';
+  import {getAfterSaleApplyDetail,updateApplyStatus, getCompanyAddress, rollbackToAudit} from '@/api/returnApply';
   import {fetchList} from '@/api/companyAddress';
   import {formatDate} from '@/utils/date';
   import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
@@ -579,7 +610,8 @@
     CHECK_PASS: 6,    // 质检通过
     CHECK_FAIL: 7,    // 质检不通过
     START_REFUND: 8,  // 发起退款
-    COMPLETE_REFUND: 9// 完成退款
+    COMPLETE_REFUND: 9,// 完成退款
+    ROLLBACK: 11      // 回退审核
   };
 
   // 退款状态常量
@@ -661,7 +693,12 @@
         submitLoading: false,
         STATUS,
         OPERATION_TYPE,
-        REFUND_STATUS
+        REFUND_STATUS,
+        rollbackDialogVisible: false,
+        rollbackForm: {
+          reason: ''
+        },
+        rollbackLoading: false
       }
     },
     created() {
@@ -720,6 +757,12 @@
         return this.orderReturnApply && 
                this.orderReturnApply.operationLogs && 
                this.orderReturnApply.operationLogs.length > 0;
+      },
+      canRollback() {
+        // 只有在已批准(1)或已拒绝(2)状态下显示回退按钮
+        return this.orderReturnApply && 
+          (this.orderReturnApply.status === STATUS.APPROVED || 
+           this.orderReturnApply.status === STATUS.REJECTED);
       }
     },
     filters: {
@@ -772,7 +815,8 @@
           [OPERATION_TYPE.CHECK_PASS]: '质检通过',
           [OPERATION_TYPE.CHECK_FAIL]: '质检不通过',
           [OPERATION_TYPE.START_REFUND]: '发起退款',
-          [OPERATION_TYPE.COMPLETE_REFUND]: '完成退款'
+          [OPERATION_TYPE.COMPLETE_REFUND]: '完成退款',
+          [OPERATION_TYPE.ROLLBACK]: '回退审核'
         };
         
         return typeMap[type] || '未知操作';
@@ -1471,6 +1515,46 @@
           this.updateStatusParam.servicePointId = point.id;
           this.updateStatusParam.servicePointName = point.locationName;
         }
+      },
+      handleRollback() {
+        this.rollbackDialogVisible = true;
+      },
+      confirmRollback() {
+        // 表单验证
+        this.$refs.rollbackForm.validate(valid => {
+          if (!valid) {
+            this.$message.warning('请填写回退原因');
+            return;
+          }
+          
+          // 确认对话框
+          this.$confirm('确认要将该售后单回退到待审核状态吗?', '提示', {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }).then(() => {
+            this.rollbackLoading = true;
+            rollbackToAudit(
+              this.id, 
+              this.orderReturnApply.version,
+              this.rollbackForm.reason
+            ).then(response => {
+              this.rollbackDialogVisible = false;
+              this.rollbackLoading = false;
+              this.$message.success('售后单已回退到待审核状态');
+              this.getDetail();
+            }).catch(error => {
+              this.rollbackLoading = false;
+              this.$message.error('回退售后单失败: ' + (error.message || '未知错误'));
+              console.error('回退售后单失败', error);
+            });
+          }).catch(() => {
+            this.$message({
+              type: 'info',
+              message: '已取消回退操作'
+            });
+          });
+        });
       }
     }
   }

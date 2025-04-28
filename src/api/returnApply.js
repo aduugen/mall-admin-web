@@ -117,3 +117,37 @@ export function getAfterSaleStatistic() {
     method: 'get'
   })
 }
+
+/**
+ * 回退售后单到待审核状态
+ * @param {Number} id 售后单ID
+ * @param {Number} version 版本号
+ * @param {String} rollbackReason 回退原因
+ * @returns {Promise} 返回请求Promise
+ */
+export function rollbackToAudit(id, version, rollbackReason) {
+  // 参数验证
+  if (!id || id <= 0) {
+    Message.error('售后单ID无效');
+    return Promise.reject(new Error('售后单ID无效'));
+  }
+  
+  if (version === undefined || version === null) {
+    Message.warning('版本号不存在，可能导致并发修改问题');
+    // 不阻止请求，但给出警告
+  }
+  
+  if (!rollbackReason) {
+    Message.error('回退原因不能为空');
+    return Promise.reject(new Error('回退原因不能为空'));
+  }
+  
+  return idempotentRequest({
+    url: `/afterSale/rollback/${id}`,
+    method: 'post',
+    params: {
+      version: version,
+      rollbackReason: rollbackReason
+    }
+  });
+}
