@@ -220,7 +220,7 @@
               <i class="el-icon-location"></i>
               <span>收货信息</span>
             </div>
-            <div class="address-card-content">
+            <div class="address-card-content" v-loading="addressLoading">
               <div class="address-select" v-show="orderReturnApply.status===0">
                 <span class="address-label">选择收货点：</span>
                 <ServicePointSelect
@@ -231,6 +231,7 @@
                 />
               </div>
               
+              <!-- 收货点信息显示区域 -->
               <div class="address-info" v-if="selectedServicePoint">
                 <div class="address-item">
                   <span class="address-info-label">网点ID：</span>
@@ -261,12 +262,24 @@
                 </div>
               </div>
               
+              <!-- 基础信息显示，当服务点ID和名称存在但未获取到详细信息时 -->
               <div class="address-info" v-else-if="orderReturnApply.servicePointId && orderReturnApply.servicePointName">
                 <div class="address-item">
-                  <span class="address-info-label">收货点：</span>
+                  <span class="address-info-label">收货点ID：</span>
+                  <span class="address-info-value">{{orderReturnApply.servicePointId}}</span>
+                </div>
+                <div class="address-item">
+                  <span class="address-info-label">收货点名称：</span>
                   <span class="address-info-value">{{orderReturnApply.servicePointName}}</span>
                 </div>
+                <div style="margin-top: 10px;">
+                  <el-button type="primary" size="small" @click="fetchServicePointDetail" :loading="addressLoading">
+                    <i class="el-icon-refresh"></i> 获取详细信息
+                  </el-button>
+                </div>
               </div>
+              
+              <!-- 无信息时显示 -->
               <div class="address-info" v-else>
                 <div class="address-item">
                   <span class="address-info-value">暂无收货信息</span>
@@ -583,6 +596,7 @@
   import {formatDate} from '@/utils/date';
   import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
   import ServicePointSelect from '@/components/ServicePointSelect';
+  import { getServicePoint } from '@/api/servicePoint'; // 导入服务点API
   import Vue from 'vue';
 
   // 状态常量定义
@@ -707,6 +721,15 @@
       
       // 添加ServicePointSelect组件到Vue原型，用于动态创建组件
       this.$ServicePointSelect = Vue.extend(ServicePointSelect);
+    },
+    mounted() {
+      // 延迟执行，确保数据已经加载
+      setTimeout(() => {
+        if (this.orderReturnApply && this.orderReturnApply.servicePointId && !this.selectedServicePoint) {
+          console.log('mounted中调用fetchServicePointDetail');
+          this.fetchServicePointDetail();
+        }
+      }, 500);
     },
     computed: {
       calculatedTotalAmount() {
@@ -1076,19 +1099,12 @@
           
           // 处理服务点信息
           if (this.orderReturnApply.servicePointId) {
-            this.updateStatusParam.servicePointId = this.orderReturnApply.id;
-            this.updateStatusParam.servicePointName = this.orderReturnApply.locationName;
+            this.updateStatusParam.servicePointId = this.orderReturnApply.servicePointId;
+            this.updateStatusParam.servicePointName = this.orderReturnApply.servicePointName;
             
-            // 尝试获取服务点详情
-            import('@/api/servicePoint').then(module => {
-              module.getServicePoint(this.orderReturnApply.servicePointId).then(response => {
-                if (response.data) {
-                  this.selectedServicePoint = response.data;
-                }
-              }).catch(() => {
-                console.log('获取服务点详情失败');
-              });
-            });
+            // 立即获取服务点详情
+            console.log('立即获取服务点详情');
+            this.fetchServicePointDetail();
           }
           
           this.listLoading = false;
@@ -1128,7 +1144,7 @@
         // 根据状态处理不同的参数
         switch(status) {
           case STATUS.APPROVED: // 已同意
-            if(this.selectedServicePoint == null) {
+            if(!this.selectedServicePoint && !params.servicePointId) {
               this.$message({
                 message: '请选择收货地址',
                 type: 'warning',
@@ -1136,7 +1152,13 @@
               });
               return;
             }
-            params.servicePointId = this.selectedServicePoint.id;
+            
+            // 确保服务点ID正确设置，不传递servicePointName
+            if(this.selectedServicePoint) {
+              params.servicePointId = this.selectedServicePoint.id;
+              // 移除servicePointName的设置
+            }
+            
             params.handleMan = this.$store.getters.name || 'admin';
             break;
           case STATUS.REJECTED: // 已拒绝 - 不应该直接调用，应该使用handleReject方法
@@ -1248,10 +1270,7 @@
           params.version = this.orderReturnApply.version;
         }
         
-        // 确保servicePointId/Name有值，并且相互匹配
-        if (params.servicePointId && !params.servicePointName && this.selectedServicePoint) {
-          params.servicePointName = this.selectedServicePoint.locationName;
-        }
+        // 移除servicePointName相关逻辑
         
         this.submitLoading = true;
         
@@ -1271,8 +1290,23 @@
         );
       },
       handleApprove() {
-        let params = Object.assign({}, this.updateStatusParam);
-        params.handleMan = this.$store.getters.name || 'admin';
+        // 确保选择了收货点
+        if (!this.selectedServicePoint && !this.updateStatusParam.servicePointId) {
+          this.$message({
+            message: '请选择收货点',
+            type: 'warning',
+            duration: 1000
+          });
+          return;
+        }
+        
+        // 确保服务点ID正确设置，但不设置servicePointName
+        if (this.selectedServicePoint) {
+          this.updateStatusParam.servicePointId = this.selectedServicePoint.id;
+          // 不再设置servicePointName
+        }
+        
+        this.updateStatusParam.handleMan = this.$store.getters.name || 'admin';
         this.handleUpdateStatus(1);
       },
       handleReject() {
@@ -1503,9 +1537,8 @@
         // 当选择服务点时，接收完整的服务点对象
         this.selectedServicePoint = point;
         if (point) {
-          // 更新updateStatusParam中的服务点信息
+          // 只更新servicePointId，不再设置servicePointName
           this.updateStatusParam.servicePointId = point.id;
-          this.updateStatusParam.servicePointName = point.locationName;
         }
       },
       handleRollback() {
@@ -1547,6 +1580,52 @@
             });
           });
         });
+      },
+      // 添加获取服务点详情的方法
+      fetchServicePointDetail() {
+        console.log('fetchServicePointDetail被调用');
+        
+        if (!this.orderReturnApply || !this.orderReturnApply.servicePointId) {
+          console.warn('无法获取服务点详情: servicePointId不存在', this.orderReturnApply);
+          this.$message.warning('没有服务点ID，无法获取详情');
+          return;
+        }
+        
+        this.addressLoading = true;
+        
+        // 确保ID是数字类型
+        const servicePointId = parseInt(this.orderReturnApply.servicePointId);
+        
+        console.log('正在获取服务点详情，原始ID:', this.orderReturnApply.servicePointId, '转换后ID:', servicePointId);
+        
+        // 添加请求前的日志
+        console.log('即将发送请求至: /servicePoint/' + servicePointId);
+        
+        getServicePoint(servicePointId).then(response => {
+          console.log('服务点API响应:', response);
+          if (response.data) {
+            console.log('服务点数据获取成功:', response.data);
+            this.updateSelectedServicePoint(response.data);
+            this.$message.success('服务点信息获取成功');
+          } else {
+            console.warn('服务点数据为空，回退到基础信息显示');
+            this.$message.warning('未找到服务点详情，显示基础信息');
+          }
+        }).catch(error => {
+          console.error('获取服务点详情失败', error);
+          this.$message.error('获取服务点详情失败: ' + (error.message || '未知错误'));
+        }).finally(() => {
+          this.addressLoading = false;
+        });
+      },
+      // 添加更新收货信息的方法
+      updateSelectedServicePoint(data) {
+        console.log('更新服务点信息', data);
+        this.selectedServicePoint = data;
+        if (data) {
+          this.updateStatusParam.servicePointId = data.id;
+          this.updateStatusParam.servicePointName = data.locationName;
+        }
       }
     }
   }
