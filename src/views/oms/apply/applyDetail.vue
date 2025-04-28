@@ -239,7 +239,7 @@
                 </div>
                 <div class="address-item">
                   <span class="address-info-label">收货点名称：</span>
-                  <span class="address-info-value">{{selectedServicePoint.locationName}}</span>
+                  <span class="address-info-value">{{selectedServicePoint.pointName}}</span>
                 </div>
                 <div class="address-item">
                   <span class="address-info-label">详细地址：</span>
@@ -568,13 +568,13 @@
       </el-card>
     </div>
     
-    <!-- 回退审核对话框 -->
+    <!-- 回退对话框 -->
     <el-dialog
       title="回退到待审核状态"
       :visible.sync="rollbackDialogVisible"
       width="30%">
-      <el-form :model="rollbackForm" ref="rollbackForm" label-width="120px">
-        <el-form-item label="回退原因" prop="reason" :rules="[{required: true, message: '请输入回退原因', trigger: 'blur'}]">
+      <el-form ref="rollbackForm" :model="rollbackForm" :rules="rollbackRules" label-width="100px">
+        <el-form-item label="回退原因" prop="reason">
           <el-input
             type="textarea"
             :rows="4"
@@ -585,19 +585,80 @@
       </el-form>
       <span slot="footer" class="dialog-footer">
         <el-button @click="rollbackDialogVisible = false">取 消</el-button>
-        <el-button type="primary" :loading="rollbackLoading" @click="confirmRollback">确 定</el-button>
+        <el-button type="primary" :loading="rollbackLoading" @click="handleRollback">确 定</el-button>
       </span>
     </el-dialog>
+
+    <!-- 添加收货信息卡片 -->
+    <el-card class="box-card" style="margin-top: 15px">
+      <div slot="header">
+        <span>收货信息</span>
+      </div>
+      <div>
+        <!-- 待处理状态下允许选择服务点 -->
+        <div v-if="orderReturnApply.status === STATUS.PENDING">
+          <el-form label-width="120px">
+            <el-form-item label="选择收货点">
+              <ServicePointSelect 
+                v-model="selectedServicePoint.id" 
+                @change="point => selectedServicePoint = point"
+                style="width: 100%"
+              ></ServicePointSelect>
+            </el-form-item>
+          </el-form>
+        </div>
+        
+        <!-- 已批准或更高状态下显示已选服务点信息 -->
+        <div v-else-if="orderReturnApply.servicePointId">
+          <el-form label-width="120px" label-position="left">
+            <el-form-item label="服务点名称">
+              <span>{{ orderReturnApply.servicePointName }}</span>
+            </el-form-item>
+            <el-form-item label="服务点编码" v-if="servicePointDetail">
+              <span>{{ servicePointDetail.pointCode }}</span>
+            </el-form-item>
+            <el-form-item label="联系人" v-if="servicePointDetail">
+              <span>{{ servicePointDetail.contact }}</span>
+            </el-form-item>
+            <el-form-item label="联系电话" v-if="servicePointDetail">
+              <span>{{ servicePointDetail.phone }}</span>
+            </el-form-item>
+            <el-form-item label="详细地址" v-if="servicePointDetail">
+              <span>{{ servicePointDetail.province }}{{ servicePointDetail.city }}{{ servicePointDetail.district }}{{ servicePointDetail.address }}</span>
+            </el-form-item>
+          </el-form>
+          
+          <!-- 未加载出服务点详情时显示 -->
+          <div v-if="!servicePointDetail && orderReturnApply.servicePointId" style="text-align: center; margin-top: 20px">
+            <p v-if="loadingServicePoint">加载服务点详情中...</p>
+            <p v-else>
+              服务点详情加载失败
+              <el-button type="text" @click="fetchServicePointDetail()">重新加载</el-button>
+            </p>
+          </div>
+        </div>
+        
+        <!-- 未审批且未选择服务点时提示 -->
+        <div v-else>
+          <el-alert
+            title="请先选择收货点，然后审核通过售后申请"
+            type="info"
+            show-icon>
+          </el-alert>
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 <script>
-  import {getAfterSaleApplyDetail,updateApplyStatus, getCompanyAddress, rollbackToAudit} from '@/api/returnApply';
-  import {fetchList} from '@/api/companyAddress';
-  import {formatDate} from '@/utils/date';
+  import { getAfterSaleApplyDetail, updateAfterSaleStatus, rollbackToAudit, fetchServicePointDetail } from '@/api/afterSale';
+  import { fetchList } from '@/api/companyAddress';
+  import { formatDate } from '@/utils/date';
   import { safeUpdateStatus, validateStatusParams } from '@/utils/afterSaleUtils';
   import ServicePointSelect from '@/components/ServicePointSelect';
   import { getServicePoint } from '@/api/servicePoint'; // 导入服务点API
   import Vue from 'vue';
+  import request from '@/utils/request'; // 导入request
 
   // 状态常量定义
   const STATUS = {
@@ -695,7 +756,9 @@
         proofList: null,
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
         companyAddressList: [],
-        selectedServicePoint: null, // 存储选中的服务点信息
+        selectedServicePoint: { id: null, pointName: '' }, // 初始化为对象而非null
+        servicePointDetail: null,
+        loadingServicePoint: false,
         previewVisible: false,
         previewImage: '',
         previewTimer: null,
@@ -711,6 +774,12 @@
         rollbackDialogVisible: false,
         rollbackForm: {
           reason: ''
+        },
+        rollbackRules: {
+          reason: [
+            { required: true, message: '请输入回退原因', trigger: 'blur' },
+            { min: 5, max: 200, message: '回退原因长度应在5-200个字符之间', trigger: 'blur' }
+          ]
         },
         rollbackLoading: false
       }
@@ -1265,49 +1334,85 @@
       },
       // 提交更新状态
       submitUpdateStatus(params) {
-        // 确保版本号传递正确
-        if (!params.version && this.orderReturnApply) {
-          params.version = this.orderReturnApply.version;
-        }
-        
-        // 移除servicePointName相关逻辑
-        
         this.submitLoading = true;
         
-        // 使用工具函数进行安全更新
-        safeUpdateStatus(
-          this.id, 
-          params,
-          () => {
-            // 成功回调
-            this.getDetail();
-            this.submitLoading = false;
-          },
-          () => {
-            // 错误回调
-            this.submitLoading = false;
-          }
-        );
-      },
-      handleApprove() {
-        // 确保选择了收货点
-        if (!this.selectedServicePoint && !this.updateStatusParam.servicePointId) {
-          this.$message({
-            message: '请选择收货点',
-            type: 'warning',
-            duration: 1000
-          });
+        // 确保params包含id参数
+        if (!params.id) {
+          params.id = this.id;
+        }
+        
+        // 验证状态参数
+        const validationResult = validateStatusParams(params);
+        if (!validationResult.valid) {
+          this.$message.error(validationResult.message);
+          this.submitLoading = false;
           return;
         }
         
-        // 确保服务点ID正确设置，但不设置servicePointName
-        if (this.selectedServicePoint) {
-          this.updateStatusParam.servicePointId = this.selectedServicePoint.id;
-          // 不再设置servicePointName
+        // 打印确认提交的参数
+        console.log('提交状态更新参数:', params);
+        
+        // 使用updateAfterSaleStatus替代updateApplyStatus
+        updateAfterSaleStatus(this.id, params).then(response => {
+          this.submitLoading = false;
+          this.getDetail();
+        }).catch(error => {
+          this.submitLoading = false;
+          this.$message.error('更新售后单状态失败: ' + (error.message || '未知错误'));
+          console.error('更新售后单状态失败', error);
+        });
+      },
+      handleApprove() {
+        // 检查是否选择了服务点
+        if (!this.selectedServicePoint) {
+          this.$message.warning('请选择收货点');
+          return;
         }
         
-        this.updateStatusParam.handleMan = this.$store.getters.name || 'admin';
-        this.handleUpdateStatus(1);
+        // 检查用户名
+        const currentUser = this.$store.getters.name;
+        console.log('当前用户名:', currentUser);
+        
+        this.$confirm('确认要同意该申请吗?', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          this.submitLoading = true;
+          
+          // 构建参数 - 使用硬编码处理人
+          const params = {
+            id: this.id,  // 确保传递售后单ID参数
+            status: 1, // 已批准状态
+            version: this.orderReturnApply.version,
+            handleNote: this.updateStatusParam.handleNote,
+            handleMan: "admin", // 硬编码处理人员参数
+            servicePointId: this.selectedServicePoint.id,
+            servicePointName: this.selectedServicePoint.pointName || this.selectedServicePoint.locationName,
+            returnAmount: this.updateStatusParam.returnAmount || this.calculatedTotalAmount // 添加退款金额参数
+          };
+          
+          console.log('提交审核参数:', JSON.stringify(params));
+          
+          // 使用封装的API函数
+          updateAfterSaleStatus(this.id, params).then(response => {
+            console.log('API响应成功:', response);
+            this.$message.success('操作成功');
+            this.submitLoading = false;
+            this.getDetail();
+          }).catch(error => {
+            console.error('审批操作失败详情:', error);
+            console.error('请求参数:', JSON.stringify(params));
+            let errorMsg = '未知错误';
+            if (error.response && error.response.data) {
+              errorMsg = error.response.data.message || JSON.stringify(error.response.data);
+            } else if (error.message) {
+              errorMsg = error.message;
+            }
+            this.$message.error('操作失败: ' + errorMsg);
+            this.submitLoading = false;
+          });
+        });
       },
       handleReject() {
         this.$prompt('请输入拒绝原因', '提示', {
@@ -1317,6 +1422,7 @@
           inputErrorMessage: '拒绝原因不能为空且不能超过200字'
         }).then(({ value }) => {
           let params = Object.assign({}, this.updateStatusParam);
+          params.id = this.id;
           params.handleMan = this.$store.getters.name || 'admin';
           params.handleNote = value;
           params.status = 2; // 已拒绝
@@ -1349,6 +1455,7 @@
                 this.$refs.receiveServicePoint.options.find(item => item.id === servicePointId);
               
               let params = Object.assign({}, this.updateStatusParam);
+              params.id = this.id;
               params.receiveMan = this.$store.getters.name || 'admin';
               params.receiveNote = receiveNote;
               params.servicePointId = servicePointId;
@@ -1542,81 +1649,69 @@
         }
       },
       handleRollback() {
-        this.rollbackDialogVisible = true;
-      },
-      confirmRollback() {
-        // 表单验证
+        // 如果对话框未显示，则显示对话框
+        if (!this.rollbackDialogVisible) {
+          this.rollbackDialogVisible = true;
+          this.rollbackForm.reason = '';
+          return;
+        }
+        
+        // 已显示对话框，则验证表单
         this.$refs.rollbackForm.validate(valid => {
           if (!valid) {
-            this.$message.warning('请填写回退原因');
+            this.$message.warning('请填写有效的回退原因');
             return;
           }
           
-          // 确认对话框
-          this.$confirm('确认要将该售后单回退到待审核状态吗?', '提示', {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }).then(() => {
-            this.rollbackLoading = true;
-            rollbackToAudit(
-              this.id, 
-              this.orderReturnApply.version,
-              this.rollbackForm.reason
-            ).then(response => {
-              this.rollbackDialogVisible = false;
-              this.rollbackLoading = false;
-              this.$message.success('售后单已回退到待审核状态');
-              this.getDetail();
-            }).catch(error => {
-              this.rollbackLoading = false;
-              this.$message.error('回退售后单失败: ' + (error.message || '未知错误'));
-              console.error('回退售后单失败', error);
-            });
-          }).catch(() => {
-            this.$message({
-              type: 'info',
-              message: '已取消回退操作'
-            });
+          this.rollbackLoading = true;
+          rollbackToAudit(
+            this.id,
+            this.orderReturnApply.version,
+            this.rollbackForm.reason
+          ).then(response => {
+            this.$message.success('回退操作成功');
+            this.rollbackDialogVisible = false;
+            this.rollbackForm.reason = '';
+            // 重新加载详情
+            this.getDetail();
+          }).catch(error => {
+            this.$message.error('回退操作失败: ' + (error.message || '未知错误'));
+          }).finally(() => {
+            this.rollbackLoading = false;
           });
         });
       },
       // 添加获取服务点详情的方法
       fetchServicePointDetail() {
-        console.log('fetchServicePointDetail被调用');
-        
         if (!this.orderReturnApply || !this.orderReturnApply.servicePointId) {
-          console.warn('无法获取服务点详情: servicePointId不存在', this.orderReturnApply);
-          this.$message.warning('没有服务点ID，无法获取详情');
+          console.log('没有服务点ID，无法获取详情');
           return;
         }
         
-        this.addressLoading = true;
+        // 避免重复请求
+        if (this.servicePointDetail && this.servicePointDetail.id === this.orderReturnApply.servicePointId) {
+          console.log('服务点详情已存在，无需重新获取');
+          return;
+        }
         
-        // 确保ID是数字类型
-        const servicePointId = parseInt(this.orderReturnApply.servicePointId);
+        this.loadingServicePoint = true;
+        console.log('正在获取服务点详情:', this.orderReturnApply.servicePointId);
         
-        console.log('正在获取服务点详情，原始ID:', this.orderReturnApply.servicePointId, '转换后ID:', servicePointId);
-        
-        // 添加请求前的日志
-        console.log('即将发送请求至: /servicePoint/' + servicePointId);
-        
-        getServicePoint(servicePointId).then(response => {
-          console.log('服务点API响应:', response);
-          if (response.data) {
-            console.log('服务点数据获取成功:', response.data);
-            this.updateSelectedServicePoint(response.data);
-            this.$message.success('服务点信息获取成功');
-          } else {
-            console.warn('服务点数据为空，回退到基础信息显示');
-            this.$message.warning('未找到服务点详情，显示基础信息');
-          }
-        }).catch(error => {
-          console.error('获取服务点详情失败', error);
-          this.$message.error('获取服务点详情失败: ' + (error.message || '未知错误'));
-        }).finally(() => {
-          this.addressLoading = false;
-        });
+        fetchServicePointDetail(this.orderReturnApply.servicePointId)
+          .then(response => {
+            console.log('获取服务点详情成功:', response.data);
+            this.servicePointDetail = response.data;
+            this.selectedServicePoint = {
+              id: response.data.id,
+              pointName: response.data.pointName || response.data.locationName
+            };
+            this.loadingServicePoint = false;
+          })
+          .catch(error => {
+            console.error('获取服务点详情失败:', error);
+            this.$message.error('获取服务点详情失败');
+            this.loadingServicePoint = false;
+          });
       },
       // 添加更新收货信息的方法
       updateSelectedServicePoint(data) {
