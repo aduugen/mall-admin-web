@@ -368,7 +368,7 @@
           </div>
         </div>
         
-        <div class="remark-section" v-show="orderReturnApply.status !=1">
+        <div class="remark-section" v-show="orderReturnApply.status ===2">
           <div class="remark-card">
             <div class="remark-card-title">
               <i class="el-icon-edit-outline"></i>
