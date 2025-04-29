@@ -1,4 +1,4 @@
-import { updateApplyStatus, getAfterSaleApplyDetail } from '@/api/returnApply'
+import { updateAfterSaleStatus, getAfterSaleApplyDetail } from '@/api/afterSale'
 import { Message, Loading } from 'element-ui'
 
 /**
@@ -70,7 +70,7 @@ export function safeUpdateStatus(id, statusData, successCallback, errorCallback,
     return Promise.reject(new Error('状态转换不合法'));
   }
   
-  return updateApplyStatus(id, statusData)
+  return updateAfterSaleStatus(id, statusData)
     .then(response => {
       if (loadingInstance) loadingInstance.close();
       
@@ -174,18 +174,16 @@ export function validateStatusTransition(oldStatus, newStatus) {
  * 
  * @param {Object} params 状态参数
  * @param {Number} targetStatus 目标状态
- * @returns {Boolean} 验证结果
+ * @returns {Object} 验证结果，包含valid和message字段
  */
 export function validateStatusParams(params, targetStatus) {
   if (!params) {
-    Message.warning('参数不能为空');
-    return false;
+    return { valid: false, message: '参数不能为空' };
   }
   
   // 验证状态
   if (params.status === undefined || params.status === null) {
-    Message.warning('状态不能为空');
-    return false;
+    return { valid: false, message: '状态不能为空' };
   }
   
   // 确保目标状态一致
@@ -203,48 +201,40 @@ export function validateStatusParams(params, targetStatus) {
   switch (params.status) {
     case STATUS.APPROVED: // 同意申请
       if (!params.servicePointId) {
-        Message.warning('请选择收货地址');
-        return false;
+        return { valid: false, message: '请选择收货地址' };
       }
       if (!params.returnAmount) {
-        Message.warning('请输入退款金额');
-        return false;
+        return { valid: false, message: '请输入退款金额' };
       }
       break;
     case STATUS.REJECTED: // 拒绝申请
       if (!params.handleNote) {
-        Message.warning('请输入拒绝原因');
-        return false;
+        return { valid: false, message: '请输入拒绝原因' };
       }
       break;
     case STATUS.SHIPPED: // 已发货
       if (!params.logisticsCompany) {
-        Message.warning('请输入物流公司');
-        return false;
+        return { valid: false, message: '请输入物流公司' };
       }
       if (!params.logisticsNumber) {
-        Message.warning('请输入物流单号');
-        return false;
+        return { valid: false, message: '请输入物流单号' };
       }
       break;
     case STATUS.CHECK_PASS:
     case STATUS.CHECK_FAIL:
       if (!params.checkNote) {
-        Message.warning('请输入质检结果说明');
-        return false;
+        return { valid: false, message: '请输入质检结果说明' };
       }
       break;
     case STATUS.REFUNDING:
       if (!params.returnAmount) {
-        Message.warning('请输入退款金额');
-        return false;
+        return { valid: false, message: '请输入退款金额' };
       }
       if (!params.refundType) {
-        Message.warning('请选择退款方式');
-        return false;
+        return { valid: false, message: '请选择退款方式' };
       }
       break;
   }
   
-  return true;
+  return { valid: true, message: '' };
 } 

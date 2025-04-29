@@ -1426,7 +1426,15 @@
           params.handleMan = this.$store.getters.name || 'admin';
           params.handleNote = value;
           params.status = 2; // 已拒绝
+          params.version = this.orderReturnApply.version; // 确保传递版本号
+          
+          // 安全检查打印参数
+          console.log('提交拒绝操作参数:', params);
+          
           this.submitUpdateStatus(params);
+        }).catch(() => {
+          // 用户取消操作
+          console.log('用户取消了拒绝操作');
         });
       },
       handleConfirmReceive() {
@@ -1672,8 +1680,30 @@
             this.$message.success('回退操作成功');
             this.rollbackDialogVisible = false;
             this.rollbackForm.reason = '';
-            // 重新加载详情
-            this.getDetail();
+            
+            // 清空收货点信息
+            this.selectedServicePoint = null;
+            this.servicePointId = null;
+            this.updateStatusParam.servicePointId = null;
+            this.updateStatusParam.servicePointName = null;
+            this.servicePointDetail = null;
+            
+            // 手动刷新页面以确保所有组件状态重置
+            this.$nextTick(() => {
+              // 重新加载详情
+              this.getDetail();
+              
+              // 确保在DOM更新后，收货点选择框的值也被清空
+              this.$nextTick(() => {
+                // 尝试获取ServicePointSelect组件实例并重置它
+                const servicePointSelect = this.$el.querySelector('.service-point-select');
+                if (servicePointSelect && servicePointSelect.__vue__) {
+                  servicePointSelect.__vue__.selectedValue = null;
+                  servicePointSelect.__vue__.$emit('input', null);
+                  servicePointSelect.__vue__.$emit('change', null);
+                }
+              });
+            });
           }).catch(error => {
             this.$message.error('回退操作失败: ' + (error.message || '未知错误'));
           }).finally(() => {
