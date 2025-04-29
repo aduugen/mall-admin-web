@@ -290,24 +290,35 @@
         </div>
         
         <!-- 处理信息 -->
-        <div class="process-section" v-show="orderReturnApply.status!==0">
+        <div class="process-section" v-show="orderReturnApply.status!== 0">
           <div class="process-card">
             <div class="process-card-title">
               <i class="el-icon-s-operation"></i>
               <span>处理信息</span>
             </div>
             <div class="process-card-content">
-              <div class="process-item">
-                <span class="process-info-label">处理人员：</span>
-                <span class="process-info-value">{{orderReturnApply.handleMan || '未处理'}}</span>
+              <div class="process-item" v-if="hasProcessList">
+                <span class="process-info-label">处理人员ID：</span>
+                <span class="process-info-value">{{orderReturnApply.processList[0].handleManId || '未处理'}}</span>
               </div>
-              <div class="process-item">
+              <div class="process-item" v-if="hasProcessList">
+                <span class="process-info-label">处理类型：</span>
+                <span class="process-info-value">{{orderReturnApply.processList[0].processType || '无'}}</span>
+              </div>
+              <div class="process-item" v-if="hasProcessList">
+                <span class="process-info-label">处理结果：</span>
+                <span class="process-info-value">{{orderReturnApply.processList[0].processResult || '无'}}</span>
+              </div>
+              <div class="process-item" v-if="hasProcessList">
                 <span class="process-info-label">处理时间：</span>
-                <span class="process-info-value">{{orderReturnApply.handleTime | formatTime}}</span>
+                <span class="process-info-value">{{orderReturnApply.processList[0].updateTime | formatTime}}</span>
               </div>
-              <div class="process-item">
+              <div class="process-item" v-if="hasProcessList">
                 <span class="process-info-label">处理备注：</span>
-                <span class="process-info-value">{{orderReturnApply.handleNote || '无'}}</span>
+                <span class="process-info-value">{{orderReturnApply.processList[0].handleNote || '无'}}</span>
+              </div>
+              <div class="process-item" v-else>
+                <span class="process-info-value">暂无处理信息</span>
               </div>
             </div>
           </div>
@@ -357,7 +368,7 @@
           </div>
         </div>
         
-        <div class="remark-section" v-show="orderReturnApply.status===1">
+        <div class="remark-section" v-show="orderReturnApply.status !=1">
           <div class="remark-card">
             <div class="remark-card-title">
               <i class="el-icon-edit-outline"></i>
@@ -587,67 +598,7 @@
         <el-button @click="rollbackDialogVisible = false">取 消</el-button>
         <el-button type="primary" :loading="rollbackLoading" @click="handleRollback">确 定</el-button>
       </span>
-    </el-dialog>
-
-    <!-- 添加收货信息卡片 -->
-    <el-card class="box-card" style="margin-top: 15px">
-      <div slot="header">
-        <span>收货信息</span>
-      </div>
-      <div>
-        <!-- 待处理状态下允许选择服务点 -->
-        <div v-if="orderReturnApply.status === STATUS.PENDING">
-          <el-form label-width="120px">
-            <el-form-item label="选择收货点">
-              <ServicePointSelect 
-                v-model="servicePointId" 
-                @change="updateSelectedServicePoint"
-                style="width: 100%"
-              ></ServicePointSelect>
-            </el-form-item>
-          </el-form>
-        </div>
-        
-        <!-- 已批准或更高状态下显示已选服务点信息 -->
-        <div v-else-if="orderReturnApply.servicePointId">
-          <el-form label-width="120px" label-position="left">
-            <el-form-item label="服务点名称">
-              <span>{{ orderReturnApply.servicePointName }}</span>
-            </el-form-item>
-            <el-form-item label="服务点编码" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.pointCode }}</span>
-            </el-form-item>
-            <el-form-item label="联系人" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.contact }}</span>
-            </el-form-item>
-            <el-form-item label="联系电话" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.contactPhone }}</span>
-            </el-form-item>
-            <el-form-item label="详细地址" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.locationAddress }}</span>
-            </el-form-item>
-          </el-form>
-          
-          <!-- 未加载出服务点详情时显示 -->
-          <div v-if="!servicePointDetail && orderReturnApply.servicePointId" style="text-align: center; margin-top: 20px">
-            <p v-if="loadingServicePoint">加载服务点详情中...</p>
-            <p v-else>
-              服务点详情加载失败
-              <el-button type="text" @click="fetchServicePointDetail()">重新加载</el-button>
-            </p>
-          </div>
-        </div>
-        
-        <!-- 未审批且未选择服务点时提示 -->
-        <div v-else>
-          <el-alert
-            title="请先选择收货点，然后审核通过售后申请"
-            type="info"
-            show-icon>
-          </el-alert>
-        </div>
-      </div>
-    </el-card>
+    </el-dialog> 
   </div>
 </template>
 <script>
@@ -860,6 +811,40 @@
         return this.orderReturnApply && 
           (this.orderReturnApply.status === STATUS.APPROVED || 
            this.orderReturnApply.status === STATUS.REJECTED);
+      },
+      hasProcessList() {
+        return this.orderReturnApply && this.orderReturnApply.processList && this.orderReturnApply.processList.length > 0;
+      },
+      getStatusName() {
+        const orderReturnApply = this.orderReturnApply
+        return STATUS_MAP[orderReturnApply.status]
+      },
+      showRejectButton() {
+        return this.orderReturnApply.status === STATUS.APPLIED || 
+            this.orderReturnApply.status === STATUS.RETURNING;
+      },
+      showApproveButton() {
+        return this.orderReturnApply.status === STATUS.APPLIED;
+      },
+      showReceiveButton() {
+        return this.orderReturnApply.status === STATUS.RETURNING;
+      },
+      showRefundButton() {
+        return this.orderReturnApply.status === STATUS.RETURNED ||
+            (this.orderReturnApply.status === STATUS.APPROVED && this.orderReturnApply.returnType === RETURN_TYPE.ONLY_REFUND);
+      },
+      showEditButton() {
+        return this.orderReturnApply.status === STATUS.APPLIED || 
+            this.orderReturnApply.status === STATUS.RETURNING;
+      },
+      showDeleteButton() {
+        return this.orderReturnApply.status === STATUS.APPLIED || 
+            this.orderReturnApply.status === STATUS.RETURNING;
+      },
+      isCompleted() {
+        return this.orderReturnApply.status === STATUS.COMPLETED || 
+            (this.orderReturnApply.status === STATUS.APPROVED || 
+             this.orderReturnApply.status === STATUS.REJECTED);
       }
     },
     filters: {
