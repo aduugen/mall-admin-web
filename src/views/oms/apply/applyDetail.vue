@@ -232,7 +232,7 @@
               </div>
               
               <!-- 收货点信息显示区域 -->
-              <div class="address-info" v-if="selectedServicePoint">
+              <div class="address-info" v-if="selectedServicePoint && selectedServicePoint.id">
                 <div class="address-item">
                   <span class="address-info-label">网点ID：</span>
                   <span class="address-info-value">{{selectedServicePoint.id}}</span>
@@ -621,10 +621,10 @@
               <span>{{ servicePointDetail.contact }}</span>
             </el-form-item>
             <el-form-item label="联系电话" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.phone }}</span>
+              <span>{{ servicePointDetail.contactPhone }}</span>
             </el-form-item>
             <el-form-item label="详细地址" v-if="servicePointDetail">
-              <span>{{ servicePointDetail.province }}{{ servicePointDetail.city }}{{ servicePointDetail.district }}{{ servicePointDetail.address }}</span>
+              <span>{{selectedServicePoint.locationAddress}}</span>
             </el-form-item>
           </el-form>
           
@@ -756,7 +756,7 @@
         proofList: null,
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
         companyAddressList: [],
-        selectedServicePoint: { id: null, pointName: '' }, // 初始化为对象而非null
+        selectedServicePoint: null, // 初始化为null而非对象
         servicePointDetail: null,
         loadingServicePoint: false,
         previewVisible: false,
@@ -794,9 +794,13 @@
     mounted() {
       // 延迟执行，确保数据已经加载
       setTimeout(() => {
-        if (this.orderReturnApply && this.orderReturnApply.servicePointId && !this.selectedServicePoint) {
-          console.log('mounted中调用fetchServicePointDetail');
-          this.fetchServicePointDetail();
+        if (this.orderReturnApply && this.orderReturnApply.servicePointId) {
+          console.log('mounted中检测到服务点ID:', this.orderReturnApply.servicePointId);
+          // 如果已经有selectedServicePoint就不再重复获取
+          if (!this.selectedServicePoint || !this.selectedServicePoint.id) {
+            console.log('mounted中调用fetchServicePointDetail');
+            this.fetchServicePointDetail();
+          }
         }
       }, 500);
     },
@@ -1168,12 +1172,19 @@
           
           // 处理服务点信息
           if (this.orderReturnApply.servicePointId) {
+            console.log('发现服务点ID和名称：', this.orderReturnApply.servicePointId, this.orderReturnApply.servicePointName);
+            // 只更新updateStatusParam，但不立即获取详情
             this.updateStatusParam.servicePointId = this.orderReturnApply.servicePointId;
             this.updateStatusParam.servicePointName = this.orderReturnApply.servicePointName;
             
-            // 立即获取服务点详情
-            console.log('立即获取服务点详情');
-            this.fetchServicePointDetail();
+            // 重置selectedServicePoint为null，确保条件渲染使用正确的分支
+            this.selectedServicePoint = null;
+            
+            // 在mounted钩子中或用户手动点击按钮时再获取详情
+            console.log('等待用户手动获取服务点详情或由mounted钩子处理');
+          } else {
+            // 确保在没有服务点信息时，selectedServicePoint也为null
+            this.selectedServicePoint = null;
           }
           
           this.listLoading = false;
@@ -1685,6 +1696,7 @@
       fetchServicePointDetail() {
         if (!this.orderReturnApply || !this.orderReturnApply.servicePointId) {
           console.log('没有服务点ID，无法获取详情');
+          this.selectedServicePoint = null; // 确保在没有服务点ID时，selectedServicePoint为null
           return;
         }
         
@@ -1700,16 +1712,27 @@
         fetchServicePointDetail(this.orderReturnApply.servicePointId)
           .then(response => {
             console.log('获取服务点详情成功:', response.data);
-            this.servicePointDetail = response.data;
-            this.selectedServicePoint = {
-              id: response.data.id,
-              pointName: response.data.pointName || response.data.locationName
-            };
+            if (response.data && response.data.id) {
+              this.servicePointDetail = response.data;
+              this.selectedServicePoint = {
+                id: response.data.id,
+                pointName: response.data.pointName || response.data.locationName,
+                locationAddress: response.data.locationAddress,
+                contactName: response.data.contactName,
+                contactPhone: response.data.contactPhone,
+                servicePointType: response.data.servicePointType
+              };
+            } else {
+              // 如果没有获取到有效数据，则保持selectedServicePoint为null
+              console.log('获取的服务点详情无效');
+              this.selectedServicePoint = null;
+            }
             this.loadingServicePoint = false;
           })
           .catch(error => {
             console.error('获取服务点详情失败:', error);
             this.$message.error('获取服务点详情失败');
+            this.selectedServicePoint = null; // 发生错误时，确保selectedServicePoint为null
             this.loadingServicePoint = false;
           });
       },
