@@ -1689,9 +1689,22 @@
           return;
         }
         
-        // 避免重复请求
+        // 避免重复请求，但仍然需要更新UI显示
         if (this.servicePointDetail && this.servicePointDetail.id === this.orderReturnApply.servicePointId) {
-          console.log('服务点详情已存在，无需重新获取');
+          console.log('服务点详情已存在，更新显示');
+          this.$message.info('服务点详情已加载，正在更新显示');
+          
+          // 确保将服务点详情赋值给selectedServicePoint以显示在界面上
+          if (!this.selectedServicePoint || this.selectedServicePoint.id !== this.servicePointDetail.id) {
+            this.selectedServicePoint = {
+              id: this.servicePointDetail.id,
+              pointName: this.servicePointDetail.pointName || this.servicePointDetail.locationName,
+              locationAddress: this.servicePointDetail.locationAddress,
+              contactName: this.servicePointDetail.contactName,
+              contactPhone: this.servicePointDetail.contactPhone,
+              servicePointType: this.servicePointDetail.servicePointType
+            };
+          }
           return;
         }
         
