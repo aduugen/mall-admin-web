@@ -239,9 +239,9 @@
                 </div>
                 <div class="address-item">
                   <span class="address-info-label">收货点名称：</span>
-                  <span class="address-info-value">{{selectedServicePoint.pointName}}</span>
+                  <span class="address-info-value">{{selectedServicePoint.pointName || ''}}</span>
                 </div>
-                <div class="address-item">
+                <div class="address-item" v-if="selectedServicePoint.locationAddress">
                   <span class="address-info-label">详细地址：</span>
                   <span class="address-info-value">{{selectedServicePoint.locationAddress}}</span>
                 </div>
@@ -253,7 +253,7 @@
                   <span class="address-info-label">联系电话：</span>
                   <span class="address-info-value">{{selectedServicePoint.contactPhone}}</span>
                 </div>
-                <div class="address-item" v-if="selectedServicePoint.servicePointType !== null">
+                <div class="address-item" v-if="selectedServicePoint.servicePointType !== null && selectedServicePoint.servicePointType !== undefined">
                   <span class="address-info-label">网点类型：</span>
                   <span class="address-info-value">
                     <el-tag size="mini" v-if="selectedServicePoint.servicePointType === 1" type="success">收货点</el-tag>
@@ -600,8 +600,8 @@
           <el-form label-width="120px">
             <el-form-item label="选择收货点">
               <ServicePointSelect 
-                v-model="selectedServicePoint.id" 
-                @change="point => selectedServicePoint = point"
+                v-model="servicePointId" 
+                @change="updateSelectedServicePoint"
                 style="width: 100%"
               ></ServicePointSelect>
             </el-form-item>
@@ -624,7 +624,7 @@
               <span>{{ servicePointDetail.contactPhone }}</span>
             </el-form-item>
             <el-form-item label="详细地址" v-if="servicePointDetail">
-              <span>{{selectedServicePoint.locationAddress}}</span>
+              <span>{{ servicePointDetail.locationAddress }}</span>
             </el-form-item>
           </el-form>
           
@@ -757,6 +757,7 @@
         updateStatusParam: Object.assign({}, defaultUpdateStatusParam),
         companyAddressList: [],
         selectedServicePoint: null, // 初始化为null而非对象
+        servicePointId: null, // 添加一个单独的servicePointId属性
         servicePointDetail: null,
         loadingServicePoint: false,
         previewVisible: false,
@@ -1224,7 +1225,7 @@
         // 根据状态处理不同的参数
         switch(status) {
           case STATUS.APPROVED: // 已同意
-            if(!this.selectedServicePoint && !params.servicePointId) {
+            if(!this.selectedServicePoint && !this.servicePointId && !params.servicePointId) {
               this.$message({
                 message: '请选择收货地址',
                 type: 'warning',
@@ -1233,10 +1234,13 @@
               return;
             }
             
-            // 确保服务点ID正确设置，不传递servicePointName
+            // 确保服务点ID正确设置
             if(this.selectedServicePoint) {
               params.servicePointId = this.selectedServicePoint.id;
-              // 移除servicePointName的设置
+              params.servicePointName = this.selectedServicePoint.pointName || this.selectedServicePoint.locationName;
+            } else if(this.servicePointId) {
+              params.servicePointId = this.servicePointId;
+              params.servicePointName = this.updateStatusParam.servicePointName;
             }
             
             params.handleMan = this.$store.getters.name || 'admin';
@@ -1375,7 +1379,7 @@
       },
       handleApprove() {
         // 检查是否选择了服务点
-        if (!this.selectedServicePoint) {
+        if (!this.selectedServicePoint && !this.servicePointId) {
           this.$message.warning('请选择收货点');
           return;
         }
@@ -1398,8 +1402,8 @@
             version: this.orderReturnApply.version,
             handleNote: this.updateStatusParam.handleNote,
             handleMan: "admin", // 硬编码处理人员参数
-            servicePointId: this.selectedServicePoint.id,
-            servicePointName: this.selectedServicePoint.pointName || this.selectedServicePoint.locationName,
+            servicePointId: this.selectedServicePoint ? this.selectedServicePoint.id : this.servicePointId,
+            servicePointName: this.selectedServicePoint ? (this.selectedServicePoint.pointName || this.selectedServicePoint.locationName) : this.updateStatusParam.servicePointName,
             returnAmount: this.updateStatusParam.returnAmount || this.calculatedTotalAmount // 添加退款金额参数
           };
           
@@ -1741,8 +1745,13 @@
         console.log('更新服务点信息', data);
         this.selectedServicePoint = data;
         if (data) {
+          this.servicePointId = data.id; // 同时更新servicePointId
           this.updateStatusParam.servicePointId = data.id;
-          this.updateStatusParam.servicePointName = data.locationName;
+          this.updateStatusParam.servicePointName = data.locationName || data.pointName;
+        } else {
+          this.servicePointId = null;
+          this.updateStatusParam.servicePointId = null;
+          this.updateStatusParam.servicePointName = null;
         }
       }
     }
